@@ -1,9 +1,63 @@
 {
+  "name": "telegram-ssh-bot",
+  "version": "2.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "telegram-ssh-bot": "./dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "telegram",
+    "ssh",
+    "bot",
+    "remote",
+    "server-management"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "postinstall": "node -e \"console.log('Telegram SSH Bot installed. Run: telegram-ssh-bot')\"",
+    "build:binary": "npm run build && pkg .",
+    "build:binary:linux": "npm run build && pkg . --targets node18-linux-x64",
+    "build:binary:macos": "npm run build && pkg . --targets node18-macos-x64",
+    "build:binary:windows": "npm run build && pkg . --targets node18-win-x64"
+  },
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "node_modules/ssh2/**/*",
+      "node_modules/node-telegram-bot-api/**/*"
+    ],
+    "targets": [
+      "node18-linux-x64",
+      "node18-macos-x64",
+      "node18-win-x64"
+    ],
+    "outputPath": "build"
+  },
   "dependencies": {
     "dotenv": "^16.3.1",
+    "joi": "^17.11.0",
     "node-telegram-bot-api": "^0.61.0",
+    "ssh2": "^1.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/node-telegram-bot-api": "^0.61.0",
+    "@types/ssh2": "^1.15.0",
+    "@yao-pkg/pkg": "^5.11.0",
     "nodemon": "^3.0.1",
-    "ssh2": "^1.14.0",
-    "yargs": "^17.7.2"
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
   }
 }

@@ -1,0 +1,13 @@
+{
+  "entryPoint": "dist/index.js",
+  "outputDir": "build",
+  "targets": {
+    "linux": "node18-linux-x64",
+    "macos": "node18-macos-x64",
+    "windows": "node18-win-x64"
+  },
+  "assets": [
+    "node_modules/ssh2/build/Release/*.node",
+    "node_modules/ssh2/lib/protocol/**/*"
+  ]
+}

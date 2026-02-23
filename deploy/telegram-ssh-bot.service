@@ -1,0 +1,32 @@
+[Unit]
+Description=Telegram SSH Bot - Remote server management via Telegram
+Documentation=https://github.com/user/telegram-ssh-bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/telegram-ssh-bot
+WorkingDirectory=%h/.config/telegram-ssh-bot
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# Environment
+EnvironmentFile=%h/.config/telegram-ssh-bot/.env
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.config/telegram-ssh-bot
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=telegram-ssh-bot
+
+[Install]
+WantedBy=default.target
