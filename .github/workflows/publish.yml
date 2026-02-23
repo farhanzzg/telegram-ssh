@@ -47,10 +47,25 @@ jobs:
           fi
           echo "Build output verified successfully"
 
-      - name: Publish to npm
+      - name: Determine NPM tag
+        id: tag
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            npm publish --tag ${{ github.event.inputs.tag }} --provenance
+            echo "npm_tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
           else
-            npm publish --provenance
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            if [[ "$TAG_NAME" =~ -beta\. ]]; then
+              echo "npm_tag=beta" >> $GITHUB_OUTPUT
+            elif [[ "$TAG_NAME" =~ -alpha\. ]]; then
+              echo "npm_tag=alpha" >> $GITHUB_OUTPUT
+            elif [[ "$TAG_NAME" =~ -next\. ]]; then
+              echo "npm_tag=next" >> $GITHUB_OUTPUT
+            elif [[ "$TAG_NAME" =~ -rc\. ]]; then
+              echo "npm_tag=rc" >> $GITHUB_OUTPUT
+            else
+              echo "npm_tag=latest" >> $GITHUB_OUTPUT
+            fi
           fi
+
+      - name: Publish to npm
+        run: npm publish --tag ${{ steps.tag.outputs.npm_tag }} --provenance
