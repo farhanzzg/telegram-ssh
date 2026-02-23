@@ -232,13 +232,33 @@ const REQUIRED_ENV_KEYS = [
 ] as const;
 
 /**
+ * Placeholder values that indicate the env var is not properly configured
+ */
+const PLACEHOLDER_VALUES: Record<string, RegExp> = {
+  BOT_TOKEN: /your_telegram_bot_token_here|^your_bot_token|^<[^>]+>$/i,
+  BOT_CHAT_ID: /your_chat_id_here|^<[^>]+>$/i,
+  ENCRYPTION_KEY: /^$|^<[^>]+>$/i,
+};
+
+/**
  * Collect all missing required environment variables
+ * Also checks for placeholder values that need to be replaced
  */
 function getMissingEnvKeys(): string[] {
   const missing: string[] = [];
   for (const key of REQUIRED_ENV_KEYS) {
-    if (!process.env[key]) {
+    const value = process.env[key];
+    
+    // Check if missing
+    if (!value) {
       missing.push(key);
+      continue;
+    }
+    
+    // Check if it's a placeholder value
+    const placeholderPattern = PLACEHOLDER_VALUES[key];
+    if (placeholderPattern && placeholderPattern.test(value)) {
+      missing.push(`${key} (has placeholder value)`);
     }
   }
   return missing;
@@ -252,6 +272,26 @@ function getRequiredEnv(key: string): string {
   if (!value) {
     throw new MissingConfigError(key);
   }
+  
+  // Check for placeholder values
+  const placeholderPattern = PLACEHOLDER_VALUES[key];
+  if (placeholderPattern && placeholderPattern.test(value)) {
+    throw new InvalidConfigError(
+      `${key} contains a placeholder value. Please update your .env file with a real value.`
+    );
+  }
+  
+  // Validate bot token format
+  if (key === "BOT_TOKEN") {
+    const tokenRegex = /^\d+:[A-Za-z0-9_-]+$/;
+    if (!tokenRegex.test(value)) {
+      throw new InvalidConfigError(
+        `BOT_TOKEN has invalid format. Expected format: 123456789:ABCdefGHI... ` +
+        `Please get your token from @BotFather on Telegram.`
+      );
+    }
+  }
+  
   return value;
 }
 

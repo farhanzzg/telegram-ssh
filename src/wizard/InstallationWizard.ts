@@ -23,8 +23,17 @@ export class InstallationWizard {
   }
 
   /**
+   * Placeholder patterns for detecting unconfigured values
+   */
+  private static readonly PLACEHOLDER_PATTERNS: Record<string, RegExp> = {
+    BOT_TOKEN: /your_telegram_bot_token_here|^your_bot_token|^<[^>]+>$/i,
+    BOT_CHAT_ID: /your_chat_id_here|^<[^>]+>$/i,
+    ENCRYPTION_KEY: /^$|^<[^>]+>$/i,
+  };
+
+  /**
    * Check if the wizard should run
-   * Returns true if .env file is missing or required variables are missing
+   * Returns true if .env file is missing or required variables are missing/placeholder
    */
   static shouldRun(): boolean {
     const envPath = getEnvFilePath();
@@ -37,7 +46,16 @@ export class InstallationWizard {
     // Check for required environment variables
     const requiredVars = ["BOT_TOKEN", "BOT_CHAT_ID", "ENCRYPTION_KEY"];
     for (const varName of requiredVars) {
-      if (!process.env[varName]) {
+      const value = process.env[varName];
+      
+      // Check if missing
+      if (!value) {
+        return true;
+      }
+      
+      // Check if it's a placeholder value
+      const pattern = this.PLACEHOLDER_PATTERNS[varName];
+      if (pattern && pattern.test(value)) {
         return true;
       }
     }

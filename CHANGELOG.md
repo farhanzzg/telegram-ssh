@@ -2,8 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepchangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.4.1] - 2026-02-23
+
+### Fixed
+
+#### HIGH Severity Fixes
+
+- **Fixed onboarding wizard not running with placeholder values** - The wizard would skip if `.env` file existed with placeholder values like `your_telegram_bot_token_here`
+  - Added placeholder value detection in `shouldRunWizard()` 
+  - Added placeholder pattern matching for `BOT_TOKEN`, `BOT_CHAT_ID`, and `ENCRYPTION_KEY`
+  - Wizard now properly runs when config has unconfigured placeholder values
+
+- **Added bot token format validation** - Invalid token format is now caught early with clear error message
+  - Validates token format matches Telegram's expected format (`123456789:ABCdef...`)
+  - Provides helpful guidance on how to get a valid token from @BotFather
+
+### Improved
+
+- **Better error messages for invalid bot tokens** - When Telegram API returns 404, the bot now:
+  - Shows a clear error banner explaining the token is invalid
+  - Provides step-by-step instructions to fix the issue
+  - Shows the exact path to the `.env` config file
+
+---
 
 ## [2.4.0] - 2026-02-23
 
@@ -290,6 +314,7 @@ If upgrading from v1.x:
 - Multi-server support
 - Basic command structure
 
+[2.4.1]: https://github.com/farhanzzg/telegram-ssh/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.1.0...v2.3.0
 [2.1.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.0.0...v2.1.0

@@ -66,7 +66,24 @@ export class Bot implements IBot {
     this.setupHandlers();
 
     // Set bot commands
-    await this.setCommands();
+    try {
+      await this.setCommands();
+    } catch (error) {
+      // Check for 404 error which indicates invalid bot token
+      if (
+        error instanceof Error &&
+        (error.message.includes("404") || error.message.includes("Not Found"))
+      ) {
+        throw new Error(
+          "Invalid bot token. Please check your BOT_TOKEN in .env file.\n" +
+            "Get your token from @BotFather on Telegram.\n" +
+            "Config file: " +
+            (process.env.HOME ?? "~") +
+            "/.config/telegram-ssh-bot/.env"
+        );
+      }
+      throw error;
+    }
 
     this.started = true;
     this.logger.info("Bot started");
@@ -164,7 +181,28 @@ export class Bot implements IBot {
 
     // Handle polling errors
     this.bot.on("polling_error", (error: Error) => {
-      this.logger.error("Polling error", error);
+      // Check for 404 error which indicates invalid bot token
+      if (error.message.includes("404") || error.message.includes("Not Found")) {
+        this.logger.error(
+          "Bot token is invalid. Please check your BOT_TOKEN in .env file.",
+          error,
+        );
+        console.error("");
+        console.error("╔═══════════════════════════════════════════════════════════════╗");
+        console.error("║  ERROR: Invalid Bot Token                                     ║");
+        console.error("╚═══════════════════════════════════════════════════════════════╝");
+        console.error("");
+        console.error("The bot token you provided is not valid.");
+        console.error("Please:");
+        console.error("  1. Go to @BotFather on Telegram");
+        console.error("  2. Get your bot token");
+        console.error("  3. Update BOT_TOKEN in your .env file:");
+        console.error(`     ${process.env.HOME}/.config/telegram-ssh-bot/.env`);
+        console.error("  4. Restart the bot");
+        console.error("");
+      } else {
+        this.logger.error("Polling error", error);
+      }
     });
   }
 
