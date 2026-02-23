@@ -8,9 +8,9 @@ dist/
 build/
 *.tgz
 
-
 test/
 *.test.js
 .DS_Store
 node_modules/
 .opencode
+.vscode
