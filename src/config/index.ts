@@ -225,7 +225,11 @@ export class ConfigReloader extends EventEmitter {
 /**
  * Required environment variable keys
  */
-const REQUIRED_ENV_KEYS = ["BOT_TOKEN", "BOT_CHAT_ID", "ENCRYPTION_KEY"] as const;
+const REQUIRED_ENV_KEYS = [
+  "BOT_TOKEN",
+  "BOT_CHAT_ID",
+  "ENCRYPTION_KEY",
+] as const;
 
 /**
  * Collect all missing required environment variables
@@ -398,4 +402,20 @@ export function validateOwnerIds(config: AppConfig): void {
       "At least one owner ID must be configured via BOT_OWNER_IDS",
     );
   }
+}
+
+/**
+ * Check if the installation wizard should run
+ * Returns true if required environment variables are missing
+ */
+export function shouldRunWizard(): boolean {
+  const missingKeys = getMissingEnvKeys();
+  return missingKeys.length > 0;
+}
+
+/**
+ * Get list of missing required configuration keys
+ */
+export function getMissingConfigKeys(): string[] {
+  return getMissingEnvKeys();
 }

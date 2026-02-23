@@ -6,11 +6,11 @@
 
 import { randomBytes } from "crypto";
 import {
-    copyFileSync,
-    existsSync,
-    mkdirSync,
-    readFileSync,
-    writeFileSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
 } from "fs";
 import { homedir } from "os";
 import { join } from "path";
@@ -161,6 +161,62 @@ MONITORING_INTERVAL_MS=300000
     console.log("Generated secure encryption key");
   }
 
+  return true;
+}
+
+/**
+ * Write a .env file with specific values
+ * Used by the installation wizard
+ * @param {Object} values - Configuration values
+ * @param {string} values.botToken - Telegram bot token
+ * @param {string} values.botChatId - Telegram chat ID
+ * @param {string[]} values.botOwnerIds - Array of owner IDs
+ * @param {string} values.encryptionKey - Encryption key (64 hex chars)
+ * @returns {boolean} True if the file was written successfully
+ */
+export function writeEnvFile(values) {
+  const { botToken, botChatId, botOwnerIds, encryptionKey } = values;
+
+  // Ensure config directory exists
+  ensureConfigDir();
+
+  const envPath = getEnvFilePath();
+
+  // Build .env content
+  const envContent = `# Telegram Bot Configuration
+BOT_TOKEN=${botToken}
+BOT_CHAT_ID=${botChatId}
+BOT_OWNER_IDS=${botOwnerIds.join(",")}
+
+# Security
+ENCRYPTION_KEY=${encryptionKey}
+
+# SSH Configuration
+SSH_DEFAULT_PORT=22
+SSH_CONNECTION_TIMEOUT=30000
+SSH_COMMAND_TIMEOUT=30000
+SSH_DEFAULT_PRIVATE_KEY_PATH=
+
+# Rate Limiting
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Backup
+BACKUP_ENABLED=true
+BACKUP_INTERVAL_MS=3600000
+BACKUP_MAX_COUNT=10
+
+# Monitoring
+MONITORING_ENABLED=true
+MONITORING_INTERVAL_MS=300000
+
+# Logging
+LOG_LEVEL=info
+LOG_FORMAT=json
+`;
+
+  writeFileSync(envPath, envContent);
   return true;
 }
 

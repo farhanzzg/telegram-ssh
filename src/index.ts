@@ -4,11 +4,13 @@
  *
  * A secure Telegram bot for managing SSH connections
  *
- * @version 2.0.0
+ * @version 2.3.0
  */
 
-import "dotenv/config";
+import { config as dotenvConfig } from "dotenv";
+import { existsSync } from "fs";
 
+import { getEnvFilePath } from "../scripts/setup-env.js";
 import {
   ConfigReloader,
   loadConfig,
@@ -39,6 +41,7 @@ import {
   ValidationService,
 } from "./services/index.js";
 import type { AppConfig } from "./types/index.js";
+import { InstallationWizard, shouldRunWizard } from "./wizard/index.js";
 
 /**
  * Application state
@@ -515,6 +518,22 @@ class Application {
  * Main entry point
  */
 async function main(): Promise<void> {
+  // Load .env file from config directory if it exists
+  const envPath = getEnvFilePath();
+  if (existsSync(envPath)) {
+    dotenvConfig({ path: envPath });
+  }
+
+  // Check if installation wizard should run
+  if (shouldRunWizard()) {
+    console.log("");
+    console.log("First-time setup detected. Launching installation wizard...");
+    const wizard = new InstallationWizard();
+    await wizard.run();
+    // Reload environment after wizard creates .env file
+    dotenvConfig({ path: envPath, override: true });
+  }
+
   const app = new Application();
 
   // Track if we're already shutting down

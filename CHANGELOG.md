@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-02-23
+
+### Added
+
+#### Interactive Installation Wizard
+
+- **New installation wizard**: Automatically runs on first launch when `.env` file is missing or incomplete
+- **Guided configuration setup**: Prompts for required configuration values interactively
+  - `BOT_TOKEN`: Telegram bot token (required)
+  - `BOT_CHAT_ID`: Telegram chat ID for notifications (required)
+  - `ENCRYPTION_KEY`: Encryption key for credential storage (required, with auto-generate option)
+  - `BOT_OWNER_IDS`: Optional comma-separated list of authorized user IDs
+- **Auto-generate encryption key**: Option to automatically generate a secure 64-character hex encryption key
+- **Configuration file creation**: Creates `.env` file at `~/.config/telegram-ssh-bot/.env`
+
+#### New Files
+
+- [`InstallationWizard.ts`](src/wizard/InstallationWizard.ts): Main wizard class that orchestrates the installation process
+- [`prompts.ts`](src/wizard/prompts.ts): Interactive CLI prompts using the `prompts` library
+- [`validators.ts`](src/wizard/validators.ts): Input validation functions for configuration values
+- [`index.ts`](src/wizard/index.ts): Module exports for the wizard package
+
+### Dependencies
+
+- Added `prompts` (^2.4.2): Interactive CLI prompts library for user input
+
+---
+
 ## [2.1.0] - 2026-02-23
 
 ### Added
