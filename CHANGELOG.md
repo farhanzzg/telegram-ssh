@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-02-23
+
+### Added
+
+#### Systemd Service Integration
+- **New systemd setup wizard** - The installation wizard now offers to setup the bot as a systemd user service
+  - Prompts to enable auto-start on login
+  - Option to start the service immediately after setup
+  - Provides helpful commands for managing the service
+
+- **Automatic systemd service updates** - When updating via `pnpm up -g --latest`:
+  - Automatically detects if systemd service is installed
+  - Updates the service file with the new executable path
+  - Restarts the service if it was running before the update
+
+- **New `telegram-ssh-bot-systemd` CLI tool** - Manage the systemd service directly:
+  - `setup` / `install` - Install and enable the systemd service
+  - `update` - Update service with new executable path
+  - `status` - Show service status
+  - `start` / `stop` / `restart` - Control the service
+  - `enable` / `disable` - Enable/disable auto-start
+
+### Fixed
+
+- **Fixed version display** - The `/health` command now shows the correct version
+  - Added `VERSION` constant in `src/version.ts` as single source of truth
+  - Updated hardcoded "2.0.0" references to use the dynamic version
+
+### Changed
+
+- Version is now centralized in `src/version.ts` for easy updates
+- Postinstall script now updates systemd service if installed
+- Improved pnpm global installation detection
+
+---
+
 ## [2.4.1] - 2026-02-23
 
 ### Fixed
@@ -314,6 +350,7 @@ If upgrading from v1.x:
 - Multi-server support
 - Basic command structure
 
+[2.5.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/farhanzzg/telegram-ssh/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.1.0...v2.3.0

@@ -9,6 +9,9 @@ import {
   getEnvFilePath,
   writeEnvFile,
 } from "../../scripts/setup-env.js";
+import {
+  fullSystemdSetup,
+} from "../../scripts/systemd-service.js";
 import { displaySummary, promptConfirmation, runPrompts } from "./prompts.js";
 
 /**
@@ -94,8 +97,40 @@ export class InstallationWizard {
       console.log("✓ Configuration saved successfully!");
       console.log(`  File: ${this.envPath}`);
       console.log("");
-      console.log("Starting application...");
-      console.log("");
+
+      // Setup systemd service if requested
+      if (config.systemd?.setup) {
+        console.log("Setting up systemd service...");
+        const systemdResult = fullSystemdSetup({
+          enable: config.systemd.enable,
+          start: config.systemd.start,
+        });
+
+        if (systemdResult.success) {
+          console.log("✓ Systemd service setup complete!");
+          console.log(`  Service: ${systemdResult.servicePath}`);
+          console.log(`  Executable: ${systemdResult.execPath}`);
+          if (systemdResult.enabled) {
+            console.log("  Status: Enabled (will start on login)");
+          }
+          if (systemdResult.started) {
+            console.log("  Status: Running");
+          }
+          console.log("");
+          console.log("Commands:");
+          console.log("  Start:   systemctl --user start telegram-ssh-bot");
+          console.log("  Stop:    systemctl --user stop telegram-ssh-bot");
+          console.log("  Status:  systemctl --user status telegram-ssh-bot");
+          console.log("  Logs:    journalctl --user -u telegram-ssh-bot -f");
+        } else {
+          console.log(`✗ Systemd setup failed: ${systemdResult.message}`);
+          console.log("  You can run the bot manually with: telegram-ssh-bot");
+        }
+        console.log("");
+      } else {
+        console.log("Starting application...");
+        console.log("");
+      }
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === "User cancelled the wizard") {

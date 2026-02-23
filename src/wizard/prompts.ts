@@ -18,6 +18,11 @@ export interface WizardConfig {
   botChatId: string;
   botOwnerIds: string[];
   encryptionKey: string;
+  systemd?: {
+    setup: boolean;
+    enable: boolean;
+    start: boolean;
+  };
 }
 
 /**
@@ -226,6 +231,71 @@ export async function promptConfirmation(): Promise<boolean> {
 }
 
 /**
+ * Prompt for systemd service setup
+ */
+export async function promptSystemdSetup(): Promise<{
+  setup: boolean;
+  enable: boolean;
+  start: boolean;
+}> {
+  console.log("");
+  console.log("─────────────────────────────────────────────");
+  console.log("Systemd Service Setup (Optional)");
+  console.log("─────────────────────────────────────────────");
+  console.log(
+    "The bot can run as a systemd user service in the background.",
+  );
+  console.log("This allows it to:");
+  console.log("  • Start automatically when you log in");
+  console.log("  • Restart automatically if it crashes");
+  console.log("  • Run in the background without keeping a terminal open");
+  console.log("");
+
+  const setupResponse = await prompts({
+    type: "confirm",
+    name: "setup",
+    message: "Would you like to setup systemd service?",
+    initial: true,
+  });
+
+  if (setupResponse.setup === undefined) {
+    throw new Error("User cancelled the wizard");
+  }
+
+  if (!setupResponse.setup) {
+    return { setup: false, enable: false, start: false };
+  }
+
+  const enableResponse = await prompts({
+    type: "confirm",
+    name: "enable",
+    message: "Enable service (auto-start on login)?",
+    initial: true,
+  });
+
+  if (enableResponse.enable === undefined) {
+    throw new Error("User cancelled the wizard");
+  }
+
+  const startResponse = await prompts({
+    type: "confirm",
+    name: "start",
+    message: "Start the service now?",
+    initial: false,
+  });
+
+  if (startResponse.start === undefined) {
+    throw new Error("User cancelled the wizard");
+  }
+
+  return {
+    setup: true,
+    enable: enableResponse.enable,
+    start: startResponse.start,
+  };
+}
+
+/**
  * Run all prompts to collect wizard configuration
  */
 export async function runPrompts(generateKey: () => string): Promise<WizardConfig> {
@@ -235,11 +305,13 @@ export async function runPrompts(generateKey: () => string): Promise<WizardConfi
   const botChatId = await promptChatId();
   const botOwnerIds = await promptOwnerIds();
   const encryptionKey = await promptEncryptionKey(generateKey);
+  const systemd = await promptSystemdSetup();
 
   return {
     botToken,
     botChatId,
     botOwnerIds,
     encryptionKey,
+    systemd,
   };
 }

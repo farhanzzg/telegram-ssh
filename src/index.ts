@@ -4,13 +4,14 @@
  *
  * A secure Telegram bot for managing SSH connections
  *
- * @version 2.4.1
+ * @version 2.5.0
  */
 
 import { config as dotenvConfig } from "dotenv";
 import { existsSync } from "fs";
 
 import { getEnvFilePath } from "../scripts/setup-env.js";
+import { VERSION } from "./version.js";
 import {
   ConfigReloader,
   loadConfig,
@@ -123,7 +124,7 @@ class Application {
 
       // Initialize health service
       this.healthService = new HealthService({
-        version: "2.0.0",
+        version: VERSION,
         startTime: this.startTime,
       });
 
@@ -419,7 +420,7 @@ class Application {
     await this.bot.start();
 
     // Send startup notification
-    await this.notificationService.notifyStartup("2.0.0");
+    await this.notificationService.notifyStartup(VERSION);
 
     this.logger.info("Bot started successfully");
   }

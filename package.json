@@ -1,6 +1,6 @@
 {
   "name": "telegram-ssh-bot",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "A Telegram bot for secure SSH server management and remote command execution",
   "type": "module",
   "main": "dist/index.js",
@@ -22,7 +22,8 @@
   },
   "homepage": "https://github.com/farhanzzg/telegram-ssh#readme",
   "bin": {
-    "telegram-ssh-bot": "./dist/index.js"
+    "telegram-ssh-bot": "./dist/index.js",
+    "telegram-ssh-bot-systemd": "./scripts/systemd-service.js"
   },
   "files": [
     "dist/**/*",
