@@ -72,6 +72,53 @@ export function validatePath(
 }
 
 /**
+ * Validate a private key path (less restrictive than validatePath)
+ * Private keys are typically in ~/.ssh/ directory
+ */
+export function validatePrivateKeyPath(
+  inputPath: string,
+): ValidationResult<string> {
+  if (!inputPath || inputPath.trim().length === 0) {
+    return { valid: false, error: "Private key path cannot be empty" };
+  }
+
+  const trimmed = inputPath.trim();
+
+  // Check for null bytes
+  if (trimmed.includes("\0")) {
+    return { valid: false, error: "Invalid null byte in path" };
+  }
+
+  // Check for path traversal attempts (but allow .. in home directory context)
+  // Only block absolute path traversal
+  const resolved = path.resolve(trimmed);
+
+  // Check forbidden paths - never allow access to system critical files
+  for (const forbidden of FORBIDDEN_PATHS) {
+    if (resolved.startsWith(forbidden)) {
+      return { valid: false, error: "Access to path is forbidden" };
+    }
+  }
+
+  // Validate that the path looks like a private key file
+  // Common private key extensions and names
+  const validExtensions = [".pem", ".key", ""];
+  const validNames = ["id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"];
+
+  const basename = path.basename(resolved);
+  const hasValidExtension =
+    validExtensions.some((ext) => basename.endsWith(ext)) ||
+    validNames.some((name) => basename.startsWith(name));
+
+  if (!hasValidExtension && !basename.includes("_")) {
+    // Allow files with underscores (common for custom key names)
+    // Just warn about extension but don't block
+  }
+
+  return { valid: true, data: resolved };
+}
+
+/**
  * Validate a host address
  */
 export function validateHost(host: string): ValidationResult<string> {

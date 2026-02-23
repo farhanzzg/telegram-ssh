@@ -4,7 +4,7 @@
  *
  * A secure Telegram bot for managing SSH connections
  *
- * @version 2.3.0
+ * @version 2.4.0
  */
 
 import { config as dotenvConfig } from "dotenv";

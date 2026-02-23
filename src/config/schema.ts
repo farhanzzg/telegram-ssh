@@ -25,7 +25,7 @@ export const configSchema = Joi.object({
   }).required(),
 
   ssh: Joi.object({
-    defaultPrivateKeyPath: Joi.string().required(),
+    defaultPrivateKeyPath: Joi.string().allow("").default("~/.ssh/id_rsa"),
     defaultPort: Joi.number().min(1).max(65535).default(22),
     connectionTimeout: Joi.number().min(1000).max(120000).default(30000),
     keepaliveInterval: Joi.number().min(1000).max(60000).default(10000),

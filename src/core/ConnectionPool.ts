@@ -346,21 +346,36 @@ export class ConnectionPool extends EventEmitter {
     return new Promise((resolve, reject) => {
       let request: ConnectionRequest;
       let handled = false;
+      let timeoutId: NodeJS.Timeout;
 
-      const timeoutId = setTimeout(() => {
-        // Ensure we only handle the timeout once
-        if (handled) {
-          return;
-        }
-        handled = true;
-
-        // Find and remove the request from the queue
-        const index = this.waitingQueue.findIndex(
-          (r) => r.serverId === serverId && r.createdAt === request.createdAt,
-        );
+      const cleanup = (): void => {
+        // Remove from queue
+        const index = this.waitingQueue.indexOf(request);
         if (index !== -1) {
           this.waitingQueue.splice(index, 1);
         }
+      };
+
+      const handleResolve = (conn: PooledConnection): void => {
+        if (handled) return;
+        handled = true;
+        clearTimeout(timeoutId);
+        cleanup();
+        resolve(conn);
+      };
+
+      const handleReject = (error: Error): void => {
+        if (handled) return;
+        handled = true;
+        clearTimeout(timeoutId);
+        cleanup();
+        reject(error);
+      };
+
+      timeoutId = setTimeout(() => {
+        if (handled) return;
+        handled = true;
+        cleanup();
 
         this.logger.debug("Connection request timed out", {
           serverId,
@@ -379,18 +394,8 @@ export class ConnectionPool extends EventEmitter {
       request = {
         serverId,
         config,
-        resolve: (conn: PooledConnection) => {
-          if (handled) return;
-          handled = true;
-          clearTimeout(timeoutId);
-          resolve(conn);
-        },
-        reject: (error: Error) => {
-          if (handled) return;
-          handled = true;
-          clearTimeout(timeoutId);
-          reject(error);
-        },
+        resolve: handleResolve,
+        reject: handleReject,
         timeoutId,
         createdAt: new Date(),
       };

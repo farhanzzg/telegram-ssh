@@ -15,6 +15,7 @@ import {
   validateHost,
   validatePath,
   validatePort,
+  validatePrivateKeyPath,
 } from "../utils/pathUtils.js";
 
 /**
@@ -104,7 +105,7 @@ export class ValidationService {
 
     // Validate private key path if provided
     if (data.privateKeyPath) {
-      const pathResult = validatePath(data.privateKeyPath);
+      const pathResult = validatePrivateKeyPath(data.privateKeyPath);
       if (!pathResult.valid) {
         errors.push(`Invalid private key path: ${pathResult.error}`);
       }

@@ -2,8 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepchangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.4.0] - 2026-02-23
+
+### Fixed
+
+#### HIGH Severity Fixes
+
+- **Critical: Fixed `ssh.defaultPrivateKeyPath` configuration error** - Application failed to start when `SSH_DEFAULT_PRIVATE_KEY_PATH` was set to empty string in `.env` file
+  - Updated `getOptionalEnv()` to properly handle empty strings (returns default value instead of empty string)
+  - Updated Joi schema to allow empty strings with sensible default (`~/.ssh/id_rsa`)
+  - Added fallback in config loader to ensure default is always applied
+
+#### MEDIUM Severity Fixes
+
+- **Fixed backup checksum collision vulnerability** - Backup file checksums now use SHA-256 instead of simple hash
+  - Prevents potential backup corruption from going undetected
+  - Uses Node.js crypto module for reliable checksums
+
+- **Fixed overly restrictive path validation for private keys** - Users couldn't add servers with private keys in custom locations
+  - Added new `validatePrivateKeyPath()` function with less restrictive validation
+  - Private keys can now be stored anywhere except system-critical paths
+  - Only blocks access to forbidden system paths (`/etc/shadow`, `/etc/passwd`, `/root/.ssh`, `/etc/ssh`, `/proc`, `/sys`)
+
+- **Fixed potential memory leak in ConnectionPool** - Request objects could remain in memory after timeout
+  - Improved cleanup in `waitForConnection()` method
+  - Added proper cleanup function that removes requests from queue on resolve/reject/timeout
+  - Prevents accumulation of abandoned request objects
+
+### Changed
+
+- Updated configuration validation to be more lenient with optional SSH settings
+- Improved error messages for configuration validation failures
+
+---
 
 ## [2.3.0] - 2026-02-23
 
@@ -256,6 +290,8 @@ If upgrading from v1.x:
 - Multi-server support
 - Basic command structure
 
+[2.4.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.3.0...v2.4.0
+[2.3.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.1.0...v2.3.0
 [2.1.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/farhanzzg/telegram-ssh/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/farhanzzg/telegram-ssh/releases/tag/v1.0.0

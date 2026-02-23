@@ -5,6 +5,7 @@
 
 import { promises as fs } from "fs";
 import * as path from "path";
+import * as crypto from "crypto";
 import { BaseError } from "../errors/BaseError.js";
 import { FileReadError, FileWriteError } from "../errors/index.js";
 import type { LogContext, ServerStorage } from "../types/index.js";
@@ -407,16 +408,9 @@ export class BackupService {
   }
 
   /**
-   * Calculate checksum for content
+   * Calculate checksum for content using SHA-256
    */
   private calculateChecksum(content: string): string {
-    // Simple hash function for checksum
-    let hash = 0;
-    for (let i = 0; i < content.length; i++) {
-      const char = content.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return hash.toString(16);
+    return crypto.createHash("sha256").update(content).digest("hex");
   }
 }

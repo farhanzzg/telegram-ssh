@@ -257,9 +257,15 @@ function getRequiredEnv(key: string): string {
 
 /**
  * Get optional environment variable with default
+ * Returns default if the value is undefined or empty string
  */
 function getOptionalEnv(key: string, defaultValue: string): string {
-  return process.env[key] ?? defaultValue;
+  const value = process.env[key];
+  // Return default if value is undefined or empty string
+  if (value === undefined || value === "") {
+    return defaultValue;
+  }
+  return value;
 }
 
 /**
@@ -340,7 +346,7 @@ export async function loadConfig(): Promise<AppConfig> {
     ssh: {
       defaultPrivateKeyPath: expandTilde(
         getOptionalEnv("SSH_DEFAULT_PRIVATE_KEY_PATH", "~/.ssh/id_rsa"),
-      ),
+      ) || expandTilde("~/.ssh/id_rsa"), // Fallback if expandTilde returns empty
       defaultPort: parseNumber(process.env.SSH_DEFAULT_PORT, 22),
       connectionTimeout: parseNumber(process.env.SSH_CONNECTION_TIMEOUT, 30000),
       keepaliveInterval: parseNumber(process.env.SSH_KEEPALIVE_INTERVAL, 10000),
