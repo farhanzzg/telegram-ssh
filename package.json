@@ -1,6 +1,6 @@
 {
   "name": "telegram-ssh-bot",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "A Telegram bot for secure SSH server management and remote command execution",
   "type": "module",
   "main": "dist/index.js",
