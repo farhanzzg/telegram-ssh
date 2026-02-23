@@ -344,13 +344,29 @@ export class ConnectionPool extends EventEmitter {
     config: SSHConnectionConfig,
   ): Promise<PooledConnection> {
     return new Promise((resolve, reject) => {
+      let request: ConnectionRequest;
+      let handled = false;
+
       const timeoutId = setTimeout(() => {
+        // Ensure we only handle the timeout once
+        if (handled) {
+          return;
+        }
+        handled = true;
+
+        // Find and remove the request from the queue
         const index = this.waitingQueue.findIndex(
           (r) => r.serverId === serverId && r.createdAt === request.createdAt,
         );
         if (index !== -1) {
           this.waitingQueue.splice(index, 1);
         }
+
+        this.logger.debug("Connection request timed out", {
+          serverId,
+          queueLength: this.waitingQueue.length,
+        });
+
         reject(
           new PoolExhaustedError(
             this.options.maxConnections,
@@ -359,11 +375,22 @@ export class ConnectionPool extends EventEmitter {
         );
       }, this.options.connectionTimeout);
 
-      const request: ConnectionRequest = {
+      // Create the request object
+      request = {
         serverId,
         config,
-        resolve,
-        reject,
+        resolve: (conn: PooledConnection) => {
+          if (handled) return;
+          handled = true;
+          clearTimeout(timeoutId);
+          resolve(conn);
+        },
+        reject: (error: Error) => {
+          if (handled) return;
+          handled = true;
+          clearTimeout(timeoutId);
+          reject(error);
+        },
         timeoutId,
         createdAt: new Date(),
       };

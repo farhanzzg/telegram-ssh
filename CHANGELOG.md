@@ -5,6 +5,89 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-02-23
+
+### Added
+
+#### Installation Improvements
+
+- **npm/pnpm global installation support**: Install globally with `npm install -g telegram-ssh-bot` or `pnpm add -g telegram-ssh-bot`
+- **Auto-generated configuration file**: `.env` file is automatically created at `~/.config/telegram-ssh-bot/.env` during installation
+- **Auto-generated encryption key**: Secure 64-character hex key is automatically generated during installation
+- **Post-install script**: Automatically sets up configuration for global npm/pnpm installations
+
+#### New Environment Variables
+
+- `SSH_DEFAULT_PORT`: Configure default SSH port for new servers (default: `22`)
+- `BACKUP_ENABLED`: Enable/disable automatic backups (default: `true`)
+- `BACKUP_INTERVAL_MS`: Backup interval in milliseconds (default: `3600000`)
+- `BACKUP_MAX_COUNT`: Maximum number of backup files to keep (default: `10`)
+- `MONITORING_ENABLED`: Enable/disable health monitoring (default: `true`)
+- `MONITORING_INTERVAL_MS`: Health check interval in milliseconds (default: `300000`)
+- `BOT_API_URL`: Optional custom Telegram Bot API URL for proxies/middlewares
+
+#### Uninstall Script Options
+
+- `-f, --force`: Non-interactive mode (skip prompts)
+- `--remove-binary`: Remove binary in force mode
+- `--remove-config`: Remove configuration in force mode
+
+### Fixed
+
+#### HIGH Severity Fixes
+
+- Fixed command injection vulnerabilities in SSH command execution
+- Fixed SSH connection race conditions
+- Fixed property name mismatch (`keyPassword`/`keypass`)
+- Fixed `parseFloat` to `parseInt` for index parsing
+- Fixed memory leaks in SSH event listeners
+- Fixed unhandled promise rejections
+- Fixed missing error handling in async operations
+
+#### MEDIUM Severity Fixes
+
+- Fixed connection pool not properly cleaning up idle connections
+- Fixed rate limiter memory leak from accumulated records
+- Fixed backup service not handling write errors gracefully
+- Fixed monitoring service not recovering from transient failures
+
+#### LOW Severity Fixes
+
+- Fixed inconsistent log formatting
+- Fixed missing validation for some configuration options
+- Fixed documentation typos and outdated examples
+- Fixed default values not being applied consistently
+
+### Changed
+
+#### Configuration Structure
+
+- Added [`BackupConfig`](src/types/Config.ts:46) interface for backup settings
+- Added [`MonitoringConfig`](src/types/Config.ts:52) interface for monitoring settings
+- Updated [`AppConfig`](src/types/Config.ts:57) to include backup and monitoring configurations
+- Configuration schema now validates all new environment variables
+
+#### Rate Limiter Improvements
+
+- Added automatic cleanup feature via [`startAutoCleanup()`](src/services/RateLimiter.ts:35)
+- Periodic cleanup removes expired rate limit records (every 5 minutes)
+- Timer is unref'd to prevent keeping process alive
+- [`stopAutoCleanup()`](src/services/RateLimiter.ts:54) method for graceful shutdown
+
+#### Error Handling Improvements
+
+- Improved error handling patterns across all services
+- Better error context and logging
+- More descriptive error messages
+
+### Security
+
+- Encryption key is now auto-generated with cryptographically secure random bytes
+- Configuration file permissions are set appropriately during installation
+- Rate limiter cleanup prevents potential memory exhaustion
+
+---
+
 ## [2.0.0] - 2024-02-23
 
 ### Breaking Changes
@@ -145,5 +228,6 @@ If upgrading from v1.x:
 - Multi-server support
 - Basic command structure
 
-[2.0.0]: https://github.com/user/telegram-ssh-bot/compare/v1.0.0...v2.0.0
-[1.0.0]: https://github.com/user/telegram-ssh-bot/releases/tag/v1.0.0
+[2.1.0]: https://github.com/farhanzzg/telegram-ssh/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/farhanzzg/telegram-ssh/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/farhanzzg/telegram-ssh/releases/tag/v1.0.0

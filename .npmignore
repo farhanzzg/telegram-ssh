@@ -1,0 +1,54 @@
+# Development files
+node_modules/
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Build artifacts (we include dist/ via package.json files)
+# Note: The "files" field in package.json takes precedence
+*.tgz
+build/
+
+# Configuration files
+servers.json
+.env
+.env.local
+dev.sh
+
+# Test files
+test/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+__tests__/
+coverage/
+
+# Documentation (keep README.md and LICENSE)
+docs/
+CHANGELOG.md
+CONTRIBUTING.md
+
+# Demo files
+demo/
+
+# Logs and backups
+logs/
+backups/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript source files (we distribute compiled JS)
+src/
+tsconfig.json
+
+# Build configuration
+build.config.json
+Makefile
+pnpm-workspace.yaml
+pnpm-lock.yaml
+package-lock.json

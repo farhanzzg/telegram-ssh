@@ -26,6 +26,7 @@ export const configSchema = Joi.object({
 
   ssh: Joi.object({
     defaultPrivateKeyPath: Joi.string().required(),
+    defaultPort: Joi.number().min(1).max(65535).default(22),
     connectionTimeout: Joi.number().min(1000).max(120000).default(30000),
     keepaliveInterval: Joi.number().min(1000).max(60000).default(10000),
     maxConnections: Joi.number().min(1).max(20).default(5),
@@ -41,5 +42,16 @@ export const configSchema = Joi.object({
   storage: Joi.object({
     serversFile: Joi.string().required(),
     encryptionEnabled: Joi.boolean().default(true),
+  }).required(),
+
+  backup: Joi.object({
+    enabled: Joi.boolean().default(true),
+    intervalMs: Joi.number().min(60000).max(86400000).default(3600000),
+    maxCount: Joi.number().min(1).max(100).default(10),
+  }).required(),
+
+  monitoring: Joi.object({
+    enabled: Joi.boolean().default(true),
+    intervalMs: Joi.number().min(10000).max(3600000).default(300000),
   }).required(),
 }).required();

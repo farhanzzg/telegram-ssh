@@ -116,6 +116,7 @@ class Application {
         blockedCommands: this.config.security.blockedCommands,
       });
       this.rateLimiter = new RateLimiter(this.config.security.rateLimit);
+      this.rateLimiter.startAutoCleanup();
 
       // Initialize health service
       this.healthService = new HealthService({
@@ -139,10 +140,10 @@ class Application {
       // Initialize backup service
       this.backupService = new BackupService(
         {
-          enabled: true,
+          enabled: this.config.backup.enabled,
           backupDir: "./backups",
-          maxBackups: 10,
-          backupInterval: 86400000, // 24 hours
+          maxBackups: this.config.backup.maxCount,
+          backupInterval: this.config.backup.intervalMs,
           backupBeforeWrite: true,
         },
         this.logger,
@@ -153,8 +154,8 @@ class Application {
       // Initialize monitoring service
       this.monitoringService = new MonitoringService(
         {
-          enabled: true,
-          checkInterval: 60000,
+          enabled: this.config.monitoring.enabled,
+          checkInterval: this.config.monitoring.intervalMs,
           timeout: 10000,
           alertThreshold: 3,
           cooldownPeriod: 300000,
@@ -458,6 +459,9 @@ class Application {
       // Stop monitoring
       this.monitoringService.stop();
 
+      // Stop rate limiter auto cleanup
+      this.rateLimiter.stopAutoCleanup();
+
       // Stop config watcher
       this.configReloader.stopWatching();
 
@@ -543,9 +547,14 @@ async function main(): Promise<void> {
   process.on("SIGHUP", () => handleShutdown("SIGHUP"));
 
   // Handle uncaught exceptions
-  process.on("uncaughtException", (error) => {
+  process.on("uncaughtException", async (error) => {
     console.error("Uncaught exception:", error);
-    handleShutdown("uncaughtException").catch(() => process.exit(1));
+    try {
+      await handleShutdown("uncaughtException");
+    } catch (e) {
+      console.error("Error during shutdown:", e);
+    }
+    process.exit(1);
   });
 
   // Handle unhandled promise rejections

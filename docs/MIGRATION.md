@@ -1,4 +1,115 @@
-# Migration Guide: v1.x to v2.0
+# Migration Guide
+
+This guide helps you migrate between major versions of Telegram SSH Bot.
+
+---
+
+## Migrating to v2.1
+
+Version 2.1 introduces new configuration options and improved installation methods.
+
+### What's New in v2.1
+
+- **npm/pnpm global installation**: Install with `npm install -g telegram-ssh-bot`
+- **Auto-generated configuration**: `.env` file and encryption key are created automatically
+- **New environment variables**: SSH defaults, backup, and monitoring configuration
+- **Improved rate limiter**: Automatic cleanup of expired records
+- **Enhanced uninstall options**: Force mode with selective removal
+
+### New Environment Variables
+
+The following environment variables have been added in v2.1:
+
+#### SSH Configuration
+
+| Variable                       | Default | Description                      |
+| ------------------------------ | ------- | -------------------------------- |
+| `SSH_DEFAULT_PORT`             | `22`    | Default SSH port for new servers |
+| `SSH_CONNECTION_TIMEOUT`       | `30000` | Connection timeout in ms         |
+| `SSH_COMMAND_TIMEOUT`          | `30000` | Command execution timeout in ms  |
+| `SSH_DEFAULT_PRIVATE_KEY_PATH` | -       | Default private key path         |
+
+#### Backup Configuration
+
+| Variable             | Default   | Description                    |
+| -------------------- | --------- | ------------------------------ |
+| `BACKUP_ENABLED`     | `true`    | Enable automatic backups       |
+| `BACKUP_INTERVAL_MS` | `3600000` | Backup interval in ms (1 hour) |
+| `BACKUP_MAX_COUNT`   | `10`      | Maximum backup files to keep   |
+
+#### Monitoring Configuration
+
+| Variable                 | Default  | Description                         |
+| ------------------------ | -------- | ----------------------------------- |
+| `MONITORING_ENABLED`     | `true`   | Enable health monitoring            |
+| `MONITORING_INTERVAL_MS` | `300000` | Health check interval in ms (5 min) |
+
+#### Optional Variables
+
+| Variable      | Description                                           |
+| ------------- | ----------------------------------------------------- |
+| `BOT_API_URL` | Custom Telegram Bot API URL (for proxies/middlewares) |
+
+### Migration Steps from v2.0 to v2.1
+
+1. **Update the bot**:
+
+   ```bash
+   # If installed via npm
+   npm update -g telegram-ssh-bot
+
+   # If using binary
+   ./deploy/install.sh
+   ```
+
+2. **Update configuration** (optional):
+
+   The new variables have sensible defaults. You can add them to your `.env` file if you want to customize:
+
+   ```bash
+   nano ~/.config/telegram-ssh-bot/.env
+   ```
+
+   Add any of the new variables you want to customize:
+
+   ```bash
+   # Example: Customize backup settings
+   BACKUP_ENABLED=true
+   BACKUP_INTERVAL_MS=7200000
+   BACKUP_MAX_COUNT=20
+
+   # Example: Customize monitoring
+   MONITORING_ENABLED=true
+   MONITORING_INTERVAL_MS=60000
+   ```
+
+3. **Restart the service**:
+
+   ```bash
+   # If using systemd
+   systemctl --user restart telegram-ssh-bot
+
+   # If running directly
+   telegram-ssh-bot
+   ```
+
+### Configuration Handling Changes
+
+- **Auto-generation**: The `.env` file is now automatically generated if it doesn't exist
+- **Encryption key**: Automatically generated during installation (no manual generation needed)
+- **Validation**: New configuration variables are validated on startup
+
+### Rate Limiter Improvements
+
+The rate limiter now includes automatic cleanup:
+
+- Expired rate limit records are cleaned up every 5 minutes
+- Prevents memory accumulation from old records
+- No configuration changes required - works automatically
+
+---
+
+## Migrating from v1.x to v2.0
 
 This guide helps you migrate from the JavaScript version (v1.x) to the TypeScript version (v2.0).
 

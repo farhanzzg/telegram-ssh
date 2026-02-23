@@ -49,11 +49,32 @@ export class AddServerHandler extends BaseHandler {
         return;
       }
 
+      // Parse and validate port number
+      let port = 22;
+      if (parts[3]) {
+        const parsedPort = parseInt(parts[3], 10);
+        if (isNaN(parsedPort)) {
+          await this.send(
+            context.chatId,
+            "❌ Invalid port number. Must be a valid integer.",
+          );
+          return;
+        }
+        if (parsedPort < 1 || parsedPort > 65535) {
+          await this.send(
+            context.chatId,
+            "❌ Port must be between 1 and 65535.",
+          );
+          return;
+        }
+        port = parsedPort;
+      }
+
       const config = {
         host: parts[0],
         username: parts[1],
         password: parts[2],
-        port: parts[3] ? parseInt(parts[3], 10) : 22,
+        port,
         note: parts[4],
       };
 

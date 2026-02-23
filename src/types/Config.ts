@@ -25,6 +25,7 @@ export interface RateLimitConfig {
 
 export interface SSHConfig {
   defaultPrivateKeyPath: string;
+  defaultPort: number;
   connectionTimeout: number;
   keepaliveInterval: number;
   maxConnections: number;
@@ -42,10 +43,23 @@ export interface StorageConfig {
   encryptionEnabled: boolean;
 }
 
+export interface BackupConfig {
+  enabled: boolean;
+  intervalMs: number;
+  maxCount: number;
+}
+
+export interface MonitoringConfig {
+  enabled: boolean;
+  intervalMs: number;
+}
+
 export interface AppConfig {
   telegram: TelegramConfig;
   security: SecurityConfig;
   ssh: SSHConfig;
   logging: LoggingConfig;
   storage: StorageConfig;
+  backup: BackupConfig;
+  monitoring: MonitoringConfig;
 }

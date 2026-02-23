@@ -21,9 +21,41 @@ interface RateLimitRecord {
 export class RateLimiter {
   private readonly config: RateLimitConfig;
   private readonly store: Map<string, RateLimitRecord> = new Map();
+  private cleanupTimer: NodeJS.Timeout | null = null;
+  private static readonly CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
   constructor(config: RateLimitConfig) {
     this.config = config;
+  }
+
+  /**
+   * Start automatic cleanup timer
+   * Runs cleanup periodically to remove expired records
+   */
+  startAutoCleanup(): void {
+    if (this.cleanupTimer) {
+      return; // Already running
+    }
+
+    this.cleanupTimer = setInterval(() => {
+      this.cleanup();
+    }, RateLimiter.CLEANUP_INTERVAL_MS);
+
+    // Prevent the timer from keeping the process alive
+    if (this.cleanupTimer.unref) {
+      this.cleanupTimer.unref();
+    }
+  }
+
+  /**
+   * Stop automatic cleanup timer
+   * Should be called during shutdown
+   */
+  stopAutoCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
   }
 
   /**

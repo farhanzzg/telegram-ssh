@@ -7,7 +7,13 @@ import { EventEmitter } from "events";
 import { existsSync, watch } from "fs";
 import * as path from "path";
 import { InvalidConfigError, MissingConfigError } from "../errors/index.js";
-import type { AppConfig, RateLimitConfig } from "../types/index.js";
+import type {
+  AppConfig,
+  BackupConfig,
+  MonitoringConfig,
+  RateLimitConfig,
+} from "../types/index.js";
+import { expandTilde } from "../utils/pathUtils.js";
 import { configSchema } from "./schema.js";
 
 /**
@@ -28,7 +34,7 @@ export class ConfigReloader extends EventEmitter {
   private readonly envPath: string;
   private watcher: ReturnType<typeof watch> | null = null;
   private reloadDebounce: NodeJS.Timeout | null = null;
-  private isReloading = false;
+  private reloadPromise: Promise<boolean> | null = null;
 
   constructor(initialConfig: AppConfig, envPath?: string) {
     super();
@@ -96,14 +102,28 @@ export class ConfigReloader extends EventEmitter {
 
   /**
    * Reload configuration from environment
+   * Uses promise-based locking to prevent race conditions
    */
   async reload(): Promise<boolean> {
-    if (this.isReloading) {
-      return false;
+    // If already reloading, return the existing promise
+    if (this.reloadPromise) {
+      return this.reloadPromise;
     }
 
-    this.isReloading = true;
+    // Create a new reload operation
+    this.reloadPromise = this.doReload();
 
+    try {
+      return await this.reloadPromise;
+    } finally {
+      this.reloadPromise = null;
+    }
+  }
+
+  /**
+   * Internal reload implementation
+   */
+  private async doReload(): Promise<boolean> {
     try {
       // Re-read .env file
       const result = await this.loadEnvFile();
@@ -137,8 +157,6 @@ export class ConfigReloader extends EventEmitter {
         error instanceof Error ? error : new Error(String(error)),
       );
       return false;
-    } finally {
-      this.isReloading = false;
     }
   }
 
@@ -205,6 +223,24 @@ export class ConfigReloader extends EventEmitter {
 }
 
 /**
+ * Required environment variable keys
+ */
+const REQUIRED_ENV_KEYS = ["BOT_TOKEN", "BOT_CHAT_ID", "ENCRYPTION_KEY"] as const;
+
+/**
+ * Collect all missing required environment variables
+ */
+function getMissingEnvKeys(): string[] {
+  const missing: string[] = [];
+  for (const key of REQUIRED_ENV_KEYS) {
+    if (!process.env[key]) {
+      missing.push(key);
+    }
+  }
+  return missing;
+}
+
+/**
  * Get required environment variable or throw error
  */
 function getRequiredEnv(key: string): string {
@@ -266,6 +302,15 @@ function parseNumber(value: string | undefined, defaultValue: number): number {
  * Load and validate configuration from environment
  */
 export async function loadConfig(): Promise<AppConfig> {
+  // Check for all missing required environment variables upfront
+  const missingKeys = getMissingEnvKeys();
+  if (missingKeys.length > 0) {
+    throw new InvalidConfigError(
+      `Missing required environment variables: ${missingKeys.join(", ")}. ` +
+        `Please set these in your .env file or environment.`,
+    );
+  }
+
   // Build config from environment variables
   const envConfig = {
     telegram: {
@@ -289,10 +334,10 @@ export async function loadConfig(): Promise<AppConfig> {
       blockedCommands: parseArray(process.env.BLOCKED_COMMANDS, []),
     },
     ssh: {
-      defaultPrivateKeyPath: getOptionalEnv(
-        "SSH_DEFAULT_PRIVATE_KEY_PATH",
-        `${process.env.HOME ?? "/root"}/.ssh/id_rsa`,
+      defaultPrivateKeyPath: expandTilde(
+        getOptionalEnv("SSH_DEFAULT_PRIVATE_KEY_PATH", "~/.ssh/id_rsa"),
       ),
+      defaultPort: parseNumber(process.env.SSH_DEFAULT_PORT, 22),
       connectionTimeout: parseNumber(process.env.SSH_CONNECTION_TIMEOUT, 30000),
       keepaliveInterval: parseNumber(process.env.SSH_KEEPALIVE_INTERVAL, 10000),
       maxConnections: parseNumber(process.env.SSH_MAX_CONNECTIONS, 5),
@@ -317,6 +362,15 @@ export async function loadConfig(): Promise<AppConfig> {
         true,
       ),
     },
+    backup: {
+      enabled: parseBoolean(process.env.BACKUP_ENABLED, true),
+      intervalMs: parseNumber(process.env.BACKUP_INTERVAL_MS, 3600000),
+      maxCount: parseNumber(process.env.BACKUP_MAX_COUNT, 10),
+    } satisfies BackupConfig,
+    monitoring: {
+      enabled: parseBoolean(process.env.MONITORING_ENABLED, true),
+      intervalMs: parseNumber(process.env.MONITORING_INTERVAL_MS, 300000),
+    } satisfies MonitoringConfig,
   };
 
   // Validate configuration

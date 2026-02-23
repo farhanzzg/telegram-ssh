@@ -5,7 +5,11 @@
 
 import { ServerManager } from "../core/ServerManager.js";
 import { SSHClient } from "../core/SSHClient.js";
-import { DisconnectedError } from "../errors/index.js";
+import {
+  ConnectionFailedError,
+  ConnectionTimeoutError,
+  DisconnectedError,
+} from "../errors/index.js";
 import { LoggingService } from "../services/LoggingService.js";
 import { ValidationService } from "../services/ValidationService.js";
 import type { CommandContext } from "../types/index.js";
@@ -61,7 +65,10 @@ export class SSHCommandHandler extends BaseHandler {
       return;
     }
 
-    const sanitizedCommand = validation.data!;
+    if (!validation.data) {
+      throw new Error("Validation data is missing");
+    }
+    const sanitizedCommand = validation.data;
     this.logger.info("Executing SSH command", {
       command: sanitizedCommand.sanitized,
       chatId: context.chatId,
@@ -107,6 +114,16 @@ export class SSHCommandHandler extends BaseHandler {
           "❌ Connection lost. Please reconnect with /ssh <index>",
         );
         this.serverManager.clearCurrent();
+      } else if (error instanceof ConnectionTimeoutError) {
+        await this.send(
+          context.chatId,
+          "❌ Connection timed out. The server may be unreachable.",
+        );
+      } else if (error instanceof ConnectionFailedError) {
+        await this.send(
+          context.chatId,
+          "❌ Connection failed. Please check the server status and try again.",
+        );
       } else {
         const message =
           error instanceof Error ? error.message : "Command execution failed";

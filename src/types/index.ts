@@ -14,7 +14,9 @@ export type {
 // Config types
 export type {
   AppConfig,
+  BackupConfig,
   LoggingConfig,
+  MonitoringConfig,
   RateLimitConfig,
   SecurityConfig,
   SSHConfig,

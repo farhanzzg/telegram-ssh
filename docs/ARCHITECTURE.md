@@ -24,19 +24,19 @@ This document outlines a comprehensive modular architecture for the Telegram-SSH
 
 ### Identified Issues
 
-| Category | Issue | Severity | Location |
-|----------|-------|----------|----------|
-| Security | Command injection via `/cmd` | Critical | [`bot.js:175`](bot.js:175) |
-| Security | SSH command injection | Critical | [`bot.js:83-85`](bot.js:83) |
-| Security | Path traversal in private key path | High | [`bot.js:307-318`](bot.js:307) |
-| Security | Plain text credential storage | High | [`bot.js:356`](bot.js:356) |
-| Bug | `parseFloat()` instead of `parseInt()` | High | [`bot.js:379`](bot.js:379), [`bot.js:419`](bot.js:419) |
-| Bug | Property name mismatch `keyPassword` vs `keypass` | High | [`bot.js:349`](bot.js:349) vs [`bot.js:443`](bot.js:443) |
-| Architecture | God Object pattern | High | [`bot.js`](bot.js) - 496 lines |
-| Architecture | Global mutable state | High | Lines 58-76 |
-| Performance | Synchronous file I/O | Medium | Throughout |
-| Performance | No connection pooling | Medium | SSH connections |
-| Performance | Event listener accumulation | Medium | SSH stream events |
+| Category     | Issue                                             | Severity | Location                                                 |
+| ------------ | ------------------------------------------------- | -------- | -------------------------------------------------------- |
+| Security     | Command injection via `/cmd`                      | Critical | [`bot.js:175`](bot.js:175)                               |
+| Security     | SSH command injection                             | Critical | [`bot.js:83-85`](bot.js:83)                              |
+| Security     | Path traversal in private key path                | High     | [`bot.js:307-318`](bot.js:307)                           |
+| Security     | Plain text credential storage                     | High     | [`bot.js:356`](bot.js:356)                               |
+| Bug          | `parseFloat()` instead of `parseInt()`            | High     | [`bot.js:379`](bot.js:379), [`bot.js:419`](bot.js:419)   |
+| Bug          | Property name mismatch `keyPassword` vs `keypass` | High     | [`bot.js:349`](bot.js:349) vs [`bot.js:443`](bot.js:443) |
+| Architecture | God Object pattern                                | High     | [`bot.js`](bot.js) - 496 lines                           |
+| Architecture | Global mutable state                              | High     | Lines 58-76                                              |
+| Performance  | Synchronous file I/O                              | Medium   | Throughout                                               |
+| Performance  | No connection pooling                             | Medium   | SSH connections                                          |
+| Performance  | Event listener accumulation                       | Medium   | SSH stream events                                        |
 
 ---
 
@@ -148,13 +148,13 @@ telegram-ssh/
 
 ### File Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Class files | PascalCase | `SSHClient.ts` |
-| Interface files | PascalCase with .types | `server.types.ts` |
-| Utility files | camelCase | `pathSanitizer.ts` |
-| Test files | PascalCase with .spec | `SSHClient.spec.ts` |
-| Configuration files | kebab-case | `tsconfig.json` |
+| Type                | Convention             | Example             |
+| ------------------- | ---------------------- | ------------------- |
+| Class files         | PascalCase             | `SSHClient.ts`      |
+| Interface files     | PascalCase with .types | `server.types.ts`   |
+| Utility files       | camelCase              | `pathSanitizer.ts`  |
+| Test files          | PascalCase with .spec  | `SSHClient.spec.ts` |
+| Configuration files | kebab-case             | `tsconfig.json`     |
 
 ---
 
@@ -172,7 +172,11 @@ interface IBot {
   start(): Promise<void>;
   stop(): Promise<void>;
   registerCommand(command: ICommand): void;
-  sendMessage(chatId: string, message: string, options?: MessageOptions): Promise<void>;
+  sendMessage(
+    chatId: string,
+    message: string,
+    options?: MessageOptions,
+  ): Promise<void>;
 }
 
 interface ICommandRegistry {
@@ -188,6 +192,7 @@ interface IMiddlewareStack {
 ```
 
 **Dependencies:**
+
 - `node-telegram-bot-api`
 - Internal: `ICommandRegistry`, `IMiddlewareStack`
 
@@ -217,6 +222,7 @@ interface ICommandExecutor {
 ```
 
 **Dependencies:**
+
 - `ssh2`
 - Internal: `ICommandExecutor`, `IValidationService`
 
@@ -243,6 +249,7 @@ interface IServerRepository {
 ```
 
 **Dependencies:**
+
 - Internal: `ISecureStorage`, `IValidationService`
 
 ### Handler Modules
@@ -261,9 +268,9 @@ interface ICommandHandler {
 abstract class BaseCommandHandler implements ICommandHandler {
   constructor(
     protected readonly serverManager: IServerManager,
-    protected readonly logger: ILoggingService
+    protected readonly logger: ILoggingService,
   ) {}
-  
+
   abstract execute(context: CommandContext): Promise<void>;
 }
 ```
@@ -310,84 +317,84 @@ graph TD
     subgraph Entry
         A[index.ts] --> B[app.ts]
     end
-    
+
     subgraph Handlers
         H1[CommandHandlers]
         H2[MessageHandler]
     end
-    
+
     subgraph Core
         C1[Bot]
         C2[SSH]
         C3[Server]
     end
-    
+
     subgraph Services
         S1[CryptoService]
         S2[ValidationService]
         S3[LoggingService]
         S4[HealthService]
     end
-    
+
     subgraph Middleware
         M1[AuthMiddleware]
         M2[RateLimitMiddleware]
         M3[LoggingMiddleware]
         M4[ValidationMiddleware]
     end
-    
+
     subgraph Storage
         ST1[FileStorage]
         ST2[SecureStorage]
     end
-    
+
     subgraph Utils
         U1[pathSanitizer]
         U2[commandSanitizer]
     end
-    
+
     subgraph Errors
         E1[BaseError]
         E2[ValidationError]
         E3[SSHError]
         E4[AuthError]
     end
-    
+
     B --> C1
     B --> S3
     B --> S4
-    
+
     C1 --> H1
     C1 --> H2
     C1 --> M1
     C1 --> M2
     C1 --> M3
     C1 --> M4
-    
+
     H1 --> C2
     H1 --> C3
     H1 --> S2
     H1 --> S3
-    
+
     C2 --> S2
     C2 --> S3
-    
+
     C3 --> ST2
     C3 --> S1
     C3 --> S2
-    
+
     ST2 --> ST1
     ST2 --> S1
-    
+
     M1 --> S3
     M2 --> S3
     M4 --> S2
     M4 --> U1
     M4 --> U2
-    
+
     S2 --> U1
     S2 --> U2
-    
+
     H1 --> E2
     H1 --> E3
     H1 --> E4
@@ -416,7 +423,7 @@ export interface Server {
 }
 
 export interface ServerAuthentication {
-  type: 'password' | 'privateKey' | 'both';
+  type: "password" | "privateKey" | "both";
   password?: EncryptedData;
   privateKeyPath?: string;
   keyPassphrase?: EncryptedData;
@@ -471,7 +478,7 @@ export interface SanitizedCommand {
 }
 
 export interface SSHConnectionState {
-  status: 'disconnected' | 'connecting' | 'connected' | 'error';
+  status: "disconnected" | "connecting" | "connected" | "error";
   server?: Server;
   lastError?: Error;
   connectedAt?: Date;
@@ -504,7 +511,7 @@ export interface BotCommand {
 }
 
 export interface MessageOptions {
-  parseMode?: 'HTML' | 'Markdown' | 'MarkdownV2';
+  parseMode?: "HTML" | "Markdown" | "MarkdownV2";
   disableWebPagePreview?: boolean;
   protectContent?: boolean;
 }
@@ -518,26 +525,28 @@ export interface MiddlewareContext extends MessageContext {
 ### Configuration Types
 
 ```typescript
-// src/types/config.types.ts
+// src/types/Config.ts
 
 export interface AppConfig {
-  bot: BotConfig;
+  telegram: TelegramConfig;
   ssh: SSHConfig;
   security: SecurityConfig;
   logging: LoggingConfig;
   storage: StorageConfig;
+  backup: BackupConfig;
+  monitoring: MonitoringConfig;
 }
 
-export interface BotConfig {
+export interface TelegramConfig {
   token: string;
   chatId: string;
   ownerIds: string[];
   polling: boolean;
-  pollingOptions?: TelegramBot.PollingOptions;
 }
 
 export interface SSHConfig {
   defaultPrivateKeyPath: string;
+  defaultPort: number;
   connectionTimeout: number;
   keepaliveInterval: number;
   maxConnections: number;
@@ -559,14 +568,25 @@ export interface RateLimitConfig {
 }
 
 export interface LoggingConfig {
-  level: 'debug' | 'info' | 'warn' | 'error';
-  format: 'json' | 'pretty';
+  level: "debug" | "info" | "warn" | "error";
+  format: "json" | "pretty";
   file?: string;
 }
 
 export interface StorageConfig {
   serversFile: string;
   encryptionEnabled: boolean;
+}
+
+export interface BackupConfig {
+  enabled: boolean;
+  intervalMs: number;
+  maxCount: number;
+}
+
+export interface MonitoringConfig {
+  enabled: boolean;
+  intervalMs: number;
 }
 ```
 
@@ -581,30 +601,30 @@ export enum ErrorCode {
   INVALID_SERVER_CONFIG = 1002,
   INVALID_COMMAND = 1003,
   INVALID_PATH = 1004,
-  
+
   // Authentication Errors (2xxx)
   UNAUTHORIZED = 2001,
   INVALID_CREDENTIALS = 2002,
   RATE_LIMITED = 2003,
-  
+
   // SSH Errors (3xxx)
   CONNECTION_FAILED = 3001,
   COMMAND_FAILED = 3002,
   CONNECTION_TIMEOUT = 3003,
   DISCONNECTED = 3004,
-  
+
   // Configuration Errors (4xxx)
   MISSING_CONFIG = 4001,
   INVALID_CONFIG = 4002,
-  
+
   // Storage Errors (5xxx)
   FILE_NOT_FOUND = 5001,
   FILE_READ_ERROR = 5002,
   FILE_WRITE_ERROR = 5003,
-  
+
   // Internal Errors (9xxx)
   INTERNAL_ERROR = 9001,
-  UNKNOWN_ERROR = 9999
+  UNKNOWN_ERROR = 9999,
 }
 
 export interface ErrorDetails {
@@ -629,20 +649,20 @@ sequenceDiagram
     participant H as Command Handler
     participant S as Services
     participant SSH as SSH Module
-    
+
     T->>B: Webhook/Polling Update
     B->>B: Parse Message
     B->>M: Process Middleware
-    
+
     M->>M: AuthMiddleware
     M->>M: RateLimitMiddleware
     M->>M: LoggingMiddleware
     M->>M: ValidationMiddleware
-    
+
     alt Middleware Failed
         M-->>T: Error Response
     end
-    
+
     M->>H: Route to Handler
     H->>S: Use Services
     S-->>H: Service Response
@@ -659,24 +679,24 @@ flowchart TD
     A[User sends command] --> B{Is connected?}
     B -->|No| C[Return error: Not connected]
     B -->|Yes| D[ValidationService.validateCommand]
-    
+
     D --> E{Is command safe?}
     E -->|No| F[Return error: Unsafe command]
     E -->|Yes| G[CommandExecutor.sanitizeCommand]
-    
+
     G --> H[SSHClient.execute]
     H --> I{Connection OK?}
-    
+
     I -->|No| J[Attempt reconnect]
     J --> K{Reconnect success?}
     K -->|No| L[Return error: Connection failed]
     K -->|Yes| H
-    
+
     I -->|Yes| M[Stream command output]
     M --> N[Collect stdout/stderr]
     N --> O[Close stream]
     O --> P[Return CommandResult]
-    
+
     subgraph Error Handling
         L --> Q[Log error]
         F --> Q
@@ -701,7 +721,7 @@ flowchart TD
         A10 --> A11[Save to storage]
         A11 --> A12[Return success]
     end
-    
+
     subgraph Remove Server
         R1[/rm command] --> R2[Parse index]
         R2 --> R3[Validate index]
@@ -711,7 +731,7 @@ flowchart TD
         R6 --> R7[Remove from storage]
         R7 --> R8[Return success]
     end
-    
+
     subgraph Connect Server
         C1[/ssh command] --> C2[Find server]
         C2 --> C3{Found?}
@@ -736,22 +756,22 @@ flowchart TD
     B -->|Yes| D{Is bot command?}
     D -->|No| C
     D -->|Yes| E[Extract command]
-    
+
     C --> F[Check current connection]
     F --> G{Is connected?}
     G -->|No| H[Return: Not connected]
     G -->|Yes| I[Process as SSH command]
-    
+
     E --> J[AuthMiddleware]
     J --> K{Is owner?}
     K -->|No| L[Log unauthorized attempt]
     L --> M[Return: Unauthorized]
-    
+
     K -->|Yes| N[RateLimitMiddleware]
     N --> O{Within limits?}
     O -->|No| P[Return: Rate limited]
     O -->|Yes| Q[ValidationMiddleware]
-    
+
     Q --> R[Sanitize input]
     R --> S[Route to handler]
 ```
@@ -798,19 +818,19 @@ flowchart TD
 // src/utils/commandSanitizer.ts
 
 const DANGEROUS_PATTERNS = [
-  /;\s*rm\s+-rf/i,           // rm -rf chain
-  /\|\s*rm\s+/i,             // pipe to rm
-  />\s*\/dev\//i,            // device redirection
-  /\$\([^)]+\)/i,            // command substitution
-  /`[^`]+`/i,                // backtick execution
-  /\$\{[^}]+\}/i,            // variable expansion
-  /&&\s*rm/i,                // chained rm
-  /\|\|\s*rm/i,              // or-chained rm
-  />\s*\//i,                 // root file write
-  /<\s*\//i,                 // root file read
-  /sudo\s+/i,                // sudo commands
-  /chmod\s+777/i,            // dangerous permissions
-  /chown\s+.*:.*\s+\//i,     // ownership changes
+  /;\s*rm\s+-rf/i, // rm -rf chain
+  /\|\s*rm\s+/i, // pipe to rm
+  />\s*\/dev\//i, // device redirection
+  /\$\([^)]+\)/i, // command substitution
+  /`[^`]+`/i, // backtick execution
+  /\$\{[^}]+\}/i, // variable expansion
+  /&&\s*rm/i, // chained rm
+  /\|\|\s*rm/i, // or-chained rm
+  />\s*\//i, // root file write
+  /<\s*\//i, // root file read
+  /sudo\s+/i, // sudo commands
+  /chmod\s+777/i, // dangerous permissions
+  /chown\s+.*:.*\s+\//i, // ownership changes
 ];
 
 const ALLOWED_SSH_COMMANDS = [
@@ -827,7 +847,7 @@ const ALLOWED_SSH_COMMANDS = [
   /^touch\s+/,
   /^cp\s+/,
   /^mv\s+/,
-  /^rm\s+(?!-rf.*\/$)/,  // rm but not rm -rf /
+  /^rm\s+(?!-rf.*\/$)/, // rm but not rm -rf /
   /^systemctl\s+(status|start|stop|restart)\s+/,
   /^docker\s+(ps|logs|exec)\s+/,
   /^nginx\s+-t\s*$/,
@@ -837,20 +857,20 @@ const ALLOWED_SSH_COMMANDS = [
 export function sanitizeCommand(command: string): SanitizedCommand {
   const warnings: string[] = [];
   let sanitized = command.trim();
-  
+
   // Check for dangerous patterns
   for (const pattern of DANGEROUS_PATTERNS) {
     if (pattern.test(sanitized)) {
       warnings.push(`Dangerous pattern detected: ${pattern.source}`);
     }
   }
-  
+
   // Remove null bytes
-  sanitized = sanitized.replace(/\0/g, '');
-  
+  sanitized = sanitized.replace(/\0/g, "");
+
   // Escape shell metacharacters for SSH
-  sanitized = sanitized.replace(/([;&|`$])/g, '\\$1');
-  
+  sanitized = sanitized.replace(/([;&|`$])/g, "\\$1");
+
   return {
     original: command,
     sanitized,
@@ -866,53 +886,53 @@ export function sanitizeCommand(command: string): SanitizedCommand {
 // src/utils/pathSanitizer.ts
 
 const ALLOWED_PATHS = [
-  '/home',
-  '/var/log',
-  '/var/www',
-  '/etc/nginx',
-  '/etc/systemd',
-  '/opt',
-  '/tmp',
+  "/home",
+  "/var/log",
+  "/var/www",
+  "/etc/nginx",
+  "/etc/systemd",
+  "/opt",
+  "/tmp",
 ];
 
 const FORBIDDEN_PATHS = [
-  '/etc/shadow',
-  '/etc/passwd',
-  '/root/.ssh',
-  '/etc/ssh',
-  '/proc',
-  '/sys',
+  "/etc/shadow",
+  "/etc/passwd",
+  "/root/.ssh",
+  "/etc/ssh",
+  "/proc",
+  "/sys",
 ];
 
 export function validatePath(
   inputPath: string,
-  basePath?: string
+  basePath?: string,
 ): ValidationResult<string> {
   // Resolve the path
-  const resolved = path.resolve(basePath || '/', inputPath);
+  const resolved = path.resolve(basePath || "/", inputPath);
   const normalized = path.normalize(resolved);
-  
+
   // Check for path traversal
-  if (normalized.includes('..')) {
-    return { valid: false, error: 'Path traversal detected' };
+  if (normalized.includes("..")) {
+    return { valid: false, error: "Path traversal detected" };
   }
-  
+
   // Check forbidden paths
   for (const forbidden of FORBIDDEN_PATHS) {
     if (normalized.startsWith(forbidden)) {
-      return { valid: false, error: 'Access to path is forbidden' };
+      return { valid: false, error: "Access to path is forbidden" };
     }
   }
-  
+
   // Check allowed paths (if whitelist mode)
-  const isAllowed = ALLOWED_PATHS.some(allowed => 
-    normalized.startsWith(allowed)
+  const isAllowed = ALLOWED_PATHS.some((allowed) =>
+    normalized.startsWith(allowed),
   );
-  
+
   if (!isAllowed) {
-    return { valid: false, error: 'Path is not in allowed list' };
+    return { valid: false, error: "Path is not in allowed list" };
   }
-  
+
   return { valid: true, data: normalized };
 }
 ```
@@ -985,67 +1005,130 @@ export function validatePath(
 
 ### Rate Limiting Design
 
-```typescript
-// src/middleware/RateLimitMiddleware.ts
+The rate limiter service provides request throttling with automatic cleanup to prevent memory leaks.
 
-interface RateLimitStore {
-  [chatId: string]: {
-    requests: number[];
-    blocked: boolean;
-    blockedUntil?: number;
-  };
+```typescript
+// src/services/RateLimiter.ts
+
+interface RateLimitRecord {
+  requests: number[];
+  blocked: boolean;
+  blockedUntil?: number;
 }
 
-export class RateLimitMiddleware implements IMiddleware {
-  private store: RateLimitStore = {};
-  
-  constructor(private config: RateLimitConfig) {}
-  
-  async execute(context: MiddlewareContext): Promise<void> {
-    const chatId = String(context.chatId);
+export class RateLimiter {
+  private readonly store: Map<string, RateLimitRecord> = new Map();
+  private cleanupTimer: NodeJS.Timeout | null = null;
+  private static readonly CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+  constructor(private readonly config: RateLimitConfig) {}
+
+  /**
+   * Start automatic cleanup timer
+   * Runs cleanup periodically to remove expired records
+   */
+  startAutoCleanup(): void {
+    if (this.cleanupTimer) {
+      return; // Already running
+    }
+
+    this.cleanupTimer = setInterval(() => {
+      this.cleanup();
+    }, RateLimiter.CLEANUP_INTERVAL_MS);
+
+    // Prevent the timer from keeping the process alive
+    if (this.cleanupTimer.unref) {
+      this.cleanupTimer.unref();
+    }
+  }
+
+  /**
+   * Stop automatic cleanup timer
+   * Should be called during shutdown
+   */
+  stopAutoCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
+
+  /**
+   * Check if a request is allowed for the given identifier
+   * @throws RateLimitedError if rate limit is exceeded
+   */
+  checkLimit(identifier: string): boolean {
+    if (!this.config.enabled) {
+      return true;
+    }
+
     const now = Date.now();
-    
-    // Initialize if not exists
-    if (!this.store[chatId]) {
-      this.store[chatId] = { requests: [], blocked: false };
+    let record = this.store.get(identifier);
+
+    if (!record) {
+      record = { requests: [], blocked: false };
+      this.store.set(identifier, record);
     }
-    
-    const record = this.store[chatId];
-    
+
     // Check if blocked
-    if (record.blocked) {
-      if (record.blockedUntil && now < record.blockedUntil) {
-        throw new AuthError(
-          ErrorCode.RATE_LIMITED,
-          `Rate limited. Try again in ${Math.ceil((record.blockedUntil - now) / 1000)}s`
-        );
-      }
-      record.blocked = false;
-      record.blockedUntil = undefined;
+    if (record.blocked && record.blockedUntil && now < record.blockedUntil) {
+      throw new RateLimitedError(
+        Math.ceil((record.blockedUntil - now) / 1000),
+        { context: { identifier } },
+      );
     }
-    
+
     // Clean old requests
     record.requests = record.requests.filter(
-      time => now - time < this.config.windowMs
+      (time) => now - time < this.config.windowMs,
     );
-    
+
     // Check limit
     if (record.requests.length >= this.config.maxRequests) {
       record.blocked = true;
       record.blockedUntil = now + this.config.windowMs;
-      throw new AuthError(
-        ErrorCode.RATE_LIMITED,
-        'Too many requests. Please wait before trying again.'
-      );
+      throw new RateLimitedError(Math.ceil(this.config.windowMs / 1000), {
+        context: { identifier },
+      });
     }
-    
-    // Record request
+
     record.requests.push(now);
-    
-    await context.next();
+    return true;
+  }
+
+  /**
+   * Clean up expired records
+   * Removes records that are no longer valid
+   */
+  cleanup(): void {
+    const now = Date.now();
+    for (const [key, record] of this.store.entries()) {
+      // Remove expired blocked records
+      if (record.blocked && record.blockedUntil && now >= record.blockedUntil) {
+        this.store.delete(key);
+        continue;
+      }
+
+      // Remove records with no valid requests
+      const validRequests = record.requests.filter(
+        (time) => now - time < this.config.windowMs,
+      );
+      if (validRequests.length === 0) {
+        this.store.delete(key);
+      } else {
+        record.requests = validRequests;
+      }
+    }
   }
 }
 ```
+
+#### Key Features
+
+- **Automatic Cleanup**: Runs every 5 minutes to remove expired records
+- **Memory Efficient**: Uses `Map` instead of plain object for better memory management
+- **Graceful Shutdown**: `stopAutoCleanup()` method for clean process termination
+- **Unref'd Timer**: Timer doesn't prevent process exit
 
 ---
 
@@ -1091,11 +1174,11 @@ export abstract class BaseError extends Error {
   public readonly timestamp: Date;
   public readonly context?: Record<string, unknown>;
   public readonly cause?: Error;
-  
+
   constructor(
     code: ErrorCode,
     message: string,
-    options?: { context?: Record<string, unknown>; cause?: Error }
+    options?: { context?: Record<string, unknown>; cause?: Error },
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -1103,10 +1186,10 @@ export abstract class BaseError extends Error {
     this.timestamp = new Date();
     this.context = options?.context;
     this.cause = options?.cause;
-    
+
     Error.captureStackTrace(this, this.constructor);
   }
-  
+
   toJSON(): ErrorDetails {
     return {
       code: this.code,
@@ -1123,7 +1206,7 @@ export class SSHError extends BaseError {
   constructor(
     code: ErrorCode,
     message: string,
-    options?: { context?: Record<string, unknown>; cause?: Error }
+    options?: { context?: Record<string, unknown>; cause?: Error },
   ) {
     super(code, message, options);
   }
@@ -1140,9 +1223,13 @@ export class ConnectionFailedError extends SSHError {
 
 export class CommandFailedError extends SSHError {
   constructor(command: string, exitCode: number, stderr: string) {
-    super(ErrorCode.COMMAND_FAILED, `Command failed with exit code ${exitCode}`, {
-      context: { command, exitCode, stderr },
-    });
+    super(
+      ErrorCode.COMMAND_FAILED,
+      `Command failed with exit code ${exitCode}`,
+      {
+        context: { command, exitCode, stderr },
+      },
+    );
   }
 }
 ```
@@ -1157,64 +1244,69 @@ export class SSHCommandHandler extends BaseCommandHandler {
       // Validate input
       const validation = this.validationService.validateCommand(context.args);
       if (!validation.valid) {
-        throw new InvalidCommandError(context.args, validation.error || 'Invalid command');
+        throw new InvalidCommandError(
+          context.args,
+          validation.error || "Invalid command",
+        );
       }
-      
+
       // Get current server
       const current = this.serverManager.getCurrent();
       if (!current) {
-        throw new DisconnectedError('No server connected');
+        throw new DisconnectedError("No server connected");
       }
-      
+
       // Execute command
       const result = await this.sshClient.execute(validation.data!.sanitized);
-      
+
       // Send response
       await this.sendResponse(context, result);
-      
     } catch (error) {
       await this.handleError(context, error);
     }
   }
-  
-  private async handleError(context: CommandContext, error: unknown): Promise<void> {
+
+  private async handleError(
+    context: CommandContext,
+    error: unknown,
+  ): Promise<void> {
     if (error instanceof BaseError) {
-      this.logger.error('Command execution failed', error, {
+      this.logger.error("Command execution failed", error, {
         chatId: context.chatId,
         command: context.command,
       });
-      
+
       await this.bot.sendMessage(
         context.chatId,
         this.formatErrorMessage(error),
-        { protectContent: true }
+        { protectContent: true },
       );
     } else {
       // Unknown error
-      this.logger.error('Unexpected error', error as Error, {
+      this.logger.error("Unexpected error", error as Error, {
         chatId: context.chatId,
       });
-      
+
       await this.bot.sendMessage(
         context.chatId,
-        'An unexpected error occurred. Please try again.',
-        { protectContent: true }
+        "An unexpected error occurred. Please try again.",
+        { protectContent: true },
       );
     }
   }
-  
+
   private formatErrorMessage(error: BaseError): string {
     const emoji = this.getErrorEmoji(error.code);
     return `${emoji} *Error*: ${error.message}\n_Code: ${error.code}_`;
   }
-  
+
   private getErrorEmoji(code: ErrorCode): string {
-    if (code >= 1000 && code < 2000) return '⚠️'; // Validation
-    if (code >= 2000 && code < 3000) return '🔒'; // Auth
-    if (code >= 3000 && code < 4000) return '🔌'; // SSH
-    if (code >= 4000 && code < 5000) return '⚙️'; // Config
-    if (code >= 5000 && code < 6000) return '💾'; // Storage
-    return '❌'; // Unknown
+    if (code >= 1000 && code < 2000) return "⚠️"; // Validation
+    if (code >= 2000 && code < 3000) return "🔒"; // Auth
+    if (code >= 3000 && code < 4000) return "🔌"; // SSH
+    if (code >= 4000 && code < 5000) return "⚙️"; // Config
+    if (code >= 5000 && code < 6000) return "💾"; // Storage
+    return "❌"; // Unknown
   }
 }
 ```
@@ -1226,62 +1318,63 @@ export class SSHCommandHandler extends BaseCommandHandler {
 
 export class LoggingService implements ILoggingService {
   private readonly level: LogLevel;
-  private readonly format: 'json' | 'pretty';
-  
+  private readonly format: "json" | "pretty";
+
   constructor(config: LoggingConfig) {
     this.level = this.parseLevel(config.level);
     this.format = config.format;
   }
-  
+
   info(message: string, context?: LogContext): void {
-    this.log('info', message, undefined, context);
+    this.log("info", message, undefined, context);
   }
-  
+
   warn(message: string, context?: LogContext): void {
-    this.log('warn', message, undefined, context);
+    this.log("warn", message, undefined, context);
   }
-  
+
   error(message: string, error?: Error, context?: LogContext): void {
-    this.log('error', message, error, context);
+    this.log("error", message, error, context);
   }
-  
+
   debug(message: string, context?: LogContext): void {
-    this.log('debug', message, undefined, context);
+    this.log("debug", message, undefined, context);
   }
-  
+
   private log(
     level: LogLevel,
     message: string,
     error?: Error,
-    context?: LogContext
+    context?: LogContext,
   ): void {
     if (!this.shouldLog(level)) return;
-    
+
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
       message,
       context,
-      error: error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      } : undefined,
+      error: error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          }
+        : undefined,
     };
-    
-    const output = this.format === 'json' 
-      ? JSON.stringify(entry)
-      : this.formatPretty(entry);
-    
-    console[level === 'error' ? 'error' : 'log'](output);
+
+    const output =
+      this.format === "json" ? JSON.stringify(entry) : this.formatPretty(entry);
+
+    console[level === "error" ? "error" : "log"](output);
   }
-  
+
   private formatPretty(entry: LogEntry): string {
     const timestamp = entry.timestamp;
     const level = entry.level.toUpperCase().padEnd(5);
-    const context = entry.context ? ` ${JSON.stringify(entry.context)}` : '';
-    const error = entry.error ? `\n  ${entry.error.stack}` : '';
-    
+    const context = entry.context ? ` ${JSON.stringify(entry.context)}` : "";
+    const error = entry.error ? `\n  ${entry.error.stack}` : "";
+
     return `[${timestamp}] ${level} | ${entry.message}${context}${error}`;
   }
 }
@@ -1297,50 +1390,51 @@ export class LoggingService implements ILoggingService {
 # .env.example
 
 # ===========================================
-# Bot Configuration
+# Telegram Bot Configuration
 # ===========================================
 BOT_TOKEN=your_telegram_bot_token
 BOT_CHAT_ID=your_chat_id
 BOT_OWNER_IDS=123456789,987654321
 
-# ===========================================
-# SSH Configuration
-# ===========================================
-SSH_DEFAULT_PRIVATE_KEY_PATH=/home/user/.ssh/id_rsa
-SSH_CONNECTION_TIMEOUT=30000
-SSH_KEEPALIVE_INTERVAL=10000
-SSH_MAX_CONNECTIONS=5
-SSH_COMMAND_TIMEOUT=60000
+# Optional: Custom Telegram Bot API URL (for proxies)
+# BOT_API_URL=https://api.telegram.org
 
 # ===========================================
 # Security Configuration
 # ===========================================
+# Auto-generated during installation
 # Generate with: openssl rand -hex 32
 ENCRYPTION_KEY=your_256_bit_encryption_key
 
 # Rate Limiting
-RATE_LIMIT_ENABLED=true
 RATE_LIMIT_WINDOW_MS=60000
-RATE_LIMIT_MAX_REQUESTS=30
+RATE_LIMIT_MAX_REQUESTS=100
+
+# ===========================================
+# SSH Configuration
+# ===========================================
+SSH_DEFAULT_PORT=22
+SSH_DEFAULT_PRIVATE_KEY_PATH=/home/user/.ssh/id_rsa
+SSH_CONNECTION_TIMEOUT=30000
+SSH_COMMAND_TIMEOUT=30000
+
+# ===========================================
+# Backup Configuration
+# ===========================================
+BACKUP_ENABLED=true
+BACKUP_INTERVAL_MS=3600000
+BACKUP_MAX_COUNT=10
+
+# ===========================================
+# Monitoring Configuration
+# ===========================================
+MONITORING_ENABLED=true
+MONITORING_INTERVAL_MS=300000
 
 # ===========================================
 # Logging Configuration
 # ===========================================
 LOG_LEVEL=info
-LOG_FORMAT=json
-LOG_FILE=/var/log/telegram-ssh/bot.log
-
-# ===========================================
-# Storage Configuration
-# ===========================================
-STORAGE_SERVERS_FILE=/var/telegram-ssh/servers.json
-STORAGE_ENCRYPTION_ENABLED=true
-
-# ===========================================
-# Server Configuration (Optional)
-# ===========================================
-PORT=3000
-HOST=0.0.0.0
 ```
 
 ### Configuration Validation Schema
@@ -1348,25 +1442,16 @@ HOST=0.0.0.0
 ```typescript
 // src/config/schema.ts
 
-import Joi from 'joi';
+import Joi from "joi";
 
 export const configSchema = Joi.object({
-  bot: Joi.object({
+  telegram: Joi.object({
     token: Joi.string().required(),
     chatId: Joi.string().required(),
     ownerIds: Joi.array().items(Joi.string()).min(1).required(),
     polling: Joi.boolean().default(true),
-    pollingOptions: Joi.object().optional(),
   }).required(),
-  
-  ssh: Joi.object({
-    defaultPrivateKeyPath: Joi.string().required(),
-    connectionTimeout: Joi.number().min(1000).max(120000).default(30000),
-    keepaliveInterval: Joi.number().min(1000).max(60000).default(10000),
-    maxConnections: Joi.number().min(1).max(20).default(5),
-    commandTimeout: Joi.number().min(1000).max(300000).default(60000),
-  }).required(),
-  
+
   security: Joi.object({
     encryptionKey: Joi.string().length(64).required(), // 32 bytes hex
     rateLimit: Joi.object({
@@ -1378,16 +1463,36 @@ export const configSchema = Joi.object({
     allowedCommands: Joi.array().items(Joi.string()).optional(),
     blockedCommands: Joi.array().items(Joi.string()).optional(),
   }).required(),
-  
+
+  ssh: Joi.object({
+    defaultPrivateKeyPath: Joi.string().required(),
+    defaultPort: Joi.number().min(1).max(65535).default(22),
+    connectionTimeout: Joi.number().min(1000).max(120000).default(30000),
+    keepaliveInterval: Joi.number().min(1000).max(60000).default(10000),
+    maxConnections: Joi.number().min(1).max(20).default(5),
+    commandTimeout: Joi.number().min(1000).max(300000).default(60000),
+  }).required(),
+
   logging: Joi.object({
-    level: Joi.string().valid('debug', 'info', 'warn', 'error').default('info'),
-    format: Joi.string().valid('json', 'pretty').default('json'),
+    level: Joi.string().valid("debug", "info", "warn", "error").default("info"),
+    format: Joi.string().valid("json", "pretty").default("json"),
     file: Joi.string().optional(),
   }).required(),
-  
+
   storage: Joi.object({
     serversFile: Joi.string().required(),
     encryptionEnabled: Joi.boolean().default(true),
+  }).required(),
+
+  backup: Joi.object({
+    enabled: Joi.boolean().default(true),
+    intervalMs: Joi.number().min(60000).max(86400000).default(3600000),
+    maxCount: Joi.number().min(1).max(100).default(10),
+  }).required(),
+
+  monitoring: Joi.object({
+    enabled: Joi.boolean().default(true),
+    intervalMs: Joi.number().min(10000).max(3600000).default(300000),
   }).required(),
 }).required();
 ```
@@ -1400,52 +1505,128 @@ export const configSchema = Joi.object({
 export async function loadConfig(): Promise<AppConfig> {
   // Load from environment
   const envConfig = {
-    bot: {
+    telegram: {
       token: process.env.BOT_TOKEN,
       chatId: process.env.BOT_CHAT_ID,
-      ownerIds: process.env.BOT_OWNER_IDS?.split(',') || [],
-      polling: process.env.BOT_POLLING !== 'false',
-    },
-    ssh: {
-      defaultPrivateKeyPath: process.env.SSH_DEFAULT_PRIVATE_KEY_PATH,
-      connectionTimeout: parseInt(process.env.SSH_CONNECTION_TIMEOUT || '30000', 10),
-      keepaliveInterval: parseInt(process.env.SSH_KEEPALIVE_INTERVAL || '10000', 10),
-      maxConnections: parseInt(process.env.SSH_MAX_CONNECTIONS || '5', 10),
-      commandTimeout: parseInt(process.env.SSH_COMMAND_TIMEOUT || '60000', 10),
+      ownerIds: process.env.BOT_OWNER_IDS?.split(",") || [],
+      polling: process.env.BOT_POLLING !== "false",
     },
     security: {
       encryptionKey: process.env.ENCRYPTION_KEY,
       rateLimit: {
-        enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
-        windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
-        maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '30', 10),
+        enabled: process.env.RATE_LIMIT_ENABLED !== "false",
+        windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10),
+        maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10),
+        skipFailedRequests: false,
       },
     },
+    ssh: {
+      defaultPrivateKeyPath: process.env.SSH_DEFAULT_PRIVATE_KEY_PATH || "",
+      defaultPort: parseInt(process.env.SSH_DEFAULT_PORT || "22", 10),
+      connectionTimeout: parseInt(process.env.SSH_CONNECTION_TIMEOUT || "30000", 10),
+      keepaliveInterval: parseInt(process.env.SSH_KEEPALIVE_INTERVAL || "10000", 10),
+      maxConnections: parseInt(process.env.SSH_MAX_CONNECTIONS || "5", 10),
+      commandTimeout: parseInt(process.env.SSH_COMMAND_TIMEOUT || "30000", 10),
+    },
     logging: {
-      level: (process.env.LOG_LEVEL as LogLevel) || 'info',
-      format: (process.env.LOG_FORMAT as 'json' | 'pretty') || 'json',
+      level: (process.env.LOG_LEVEL as LogLevel) || "info",
+      format: (process.env.LOG_FORMAT as "json" | "pretty") || "json",
       file: process.env.LOG_FILE,
     },
     storage: {
-      serversFile: process.env.STORAGE_SERVERS_FILE || '/var/telegram-ssh/servers.json',
-      encryptionEnabled: process.env.STORAGE_ENCRYPTION_ENABLED !== 'false',
+      serversFile: process.env.STORAGE_SERVERS_FILE || "",
+      encryptionEnabled: true,
+    },
+    backup: {
+      enabled: process.env.BACKUP_ENABLED !== "false",
+      intervalMs: parseInt(process.env.BACKUP_INTERVAL_MS || "3600000", 10),
+      maxCount: parseInt(process.env.BACKUP_MAX_COUNT || "10", 10),
+    },
+    monitoring: {
+      enabled: process.env.MONITORING_ENABLED !== "false",
+      intervalMs: parseInt(process.env.MONITORING_INTERVAL_MS || "300000", 10),
     },
   };
-  
+
   // Validate
   const { error, value } = configSchema.validate(envConfig, {
     abortEarly: false,
     allowUnknown: false,
   });
-  
+
   if (error) {
     throw new ConfigurationError(
       ErrorCode.INVALID_CONFIG,
-      `Configuration validation failed: ${error.details.map(d => d.message).join(', ')}`
+      `Configuration validation failed: ${error.details.map((d) => d.message).join(", ")}`,
     );
   }
-  
+
   return value;
+}
+```
+
+### Auto-Generated Configuration
+
+The configuration file is automatically generated during installation:
+
+```typescript
+// scripts/setup-env.js
+
+import { randomBytes } from "crypto";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
+
+export function getConfigDir(): string {
+  return join(homedir(), ".config", "telegram-ssh-bot");
+}
+
+export function getEnvFilePath(): string {
+  return join(getConfigDir(), ".env");
+}
+
+export function generateEncryptionKey(): string {
+  return randomBytes(32).toString("hex");
+}
+
+export function createEnvFile(options: { generateKey: boolean }): void {
+  const configDir = getConfigDir();
+  const envPath = getEnvFilePath();
+
+  // Create directory if not exists
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true });
+  }
+
+  // Generate encryption key if requested
+  const encryptionKey = options.generateKey ? generateEncryptionKey() : "";
+
+  // Create .env content
+  const envContent = `# Telegram Bot Configuration
+BOT_TOKEN=your_telegram_bot_token_here
+BOT_CHAT_ID=your_chat_id_here
+BOT_OWNER_IDS=123456789,987654321
+
+# Security
+ENCRYPTION_KEY=${encryptionKey}
+
+# SSH Configuration
+SSH_DEFAULT_PORT=22
+SSH_CONNECTION_TIMEOUT=30000
+SSH_COMMAND_TIMEOUT=30000
+
+# Backup
+BACKUP_ENABLED=true
+BACKUP_INTERVAL_MS=3600000
+BACKUP_MAX_COUNT=10
+
+# Monitoring
+MONITORING_ENABLED=true
+MONITORING_INTERVAL_MS=300000
+`;
+
+  writeFileSync(envPath, envContent);
+  console.log(`Configuration file created at: ${envPath}`);
 }
 ```
 
@@ -1513,15 +1694,15 @@ export async function loadConfig(): Promise<AppConfig> {
 
 ### Breaking Changes Checklist
 
-| Current | New | Migration Notes |
-|---------|-----|-----------------|
-| `parseFloat()` for index | `parseInt()` | Fix in all handlers |
-| `keyPassword` property | `keyPassphrase` | Rename in types |
-| Plain text passwords | Encrypted storage | Migration script needed |
-| Global `servers` array | ServerManager | Dependency injection |
-| Global `current` variable | ServerManager state | State management |
-| Sync file I/O | Async operations | Promise-based storage |
-| No validation | ValidationService | Add to all inputs |
+| Current                   | New                 | Migration Notes         |
+| ------------------------- | ------------------- | ----------------------- |
+| `parseFloat()` for index  | `parseInt()`        | Fix in all handlers     |
+| `keyPassword` property    | `keyPassphrase`     | Rename in types         |
+| Plain text passwords      | Encrypted storage   | Migration script needed |
+| Global `servers` array    | ServerManager       | Dependency injection    |
+| Global `current` variable | ServerManager state | State management        |
+| Sync file I/O             | Async operations    | Promise-based storage   |
+| No validation             | ValidationService   | Add to all inputs       |
 
 ---
 
@@ -1532,19 +1713,31 @@ export async function loadConfig(): Promise<AppConfig> {
 ```typescript
 // src/container.ts
 
-import { Container } from 'inversify';
-import { TYPES } from './types';
+import { Container } from "inversify";
+import { TYPES } from "./types";
 
 const container = new Container();
 
 // Services
-container.bind<ILoggingService>(TYPES.LoggingService).to(LoggingService).inSingletonScope();
-container.bind<IValidationService>(TYPES.ValidationService).to(ValidationService).inSingletonScope();
-container.bind<ICryptoService>(TYPES.CryptoService).to(CryptoService).inSingletonScope();
+container
+  .bind<ILoggingService>(TYPES.LoggingService)
+  .to(LoggingService)
+  .inSingletonScope();
+container
+  .bind<IValidationService>(TYPES.ValidationService)
+  .to(ValidationService)
+  .inSingletonScope();
+container
+  .bind<ICryptoService>(TYPES.CryptoService)
+  .to(CryptoService)
+  .inSingletonScope();
 
 // Core
 container.bind<ISSHClient>(TYPES.SSHClient).to(SSHClient).inRequestScope();
-container.bind<IServerManager>(TYPES.ServerManager).to(ServerManager).inSingletonScope();
+container
+  .bind<IServerManager>(TYPES.ServerManager)
+  .to(ServerManager)
+  .inSingletonScope();
 container.bind<IBot>(TYPES.Bot).to(TelegramBot).inSingletonScope();
 
 // Handlers
@@ -1564,31 +1757,31 @@ export class HealthService {
   constructor(
     private readonly sshClient: ISSHClient,
     private readonly serverManager: IServerManager,
-    private readonly storage: IStorage
+    private readonly storage: IStorage,
   ) {}
-  
+
   async check(): Promise<HealthStatus> {
     return {
-      status: 'healthy',
+      status: "healthy",
       timestamp: new Date().toISOString(),
       checks: {
         ssh: {
-          status: this.sshClient.isConnected() ? 'up' : 'down',
-          details: this.sshClient.isConnected() 
+          status: this.sshClient.isConnected() ? "up" : "down",
+          details: this.sshClient.isConnected()
             ? { server: this.serverManager.getCurrent()?.host }
-            : { message: 'Not connected' },
+            : { message: "Not connected" },
         },
         storage: {
-          status: await this.checkStorage() ? 'up' : 'down',
+          status: (await this.checkStorage()) ? "up" : "down",
         },
         memory: {
-          status: 'up',
+          status: "up",
           details: process.memoryUsage(),
         },
       },
     };
   }
-  
+
   private async checkStorage(): Promise<boolean> {
     try {
       await this.storage.load();
@@ -1606,20 +1799,20 @@ export class HealthService {
 // src/app.ts
 
 export class Application {
-  private readonly shutdownSignals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
-  
+  private readonly shutdownSignals = ["SIGTERM", "SIGINT", "SIGUSR2"];
+
   constructor(
     private readonly bot: IBot,
     private readonly sshClient: ISSHClient,
-    private readonly logger: ILoggingService
+    private readonly logger: ILoggingService,
   ) {}
-  
+
   async start(): Promise<void> {
     this.setupShutdownHandlers();
     await this.bot.start();
-    this.logger.info('Application started');
+    this.logger.info("Application started");
   }
-  
+
   private setupShutdownHandlers(): void {
     for (const signal of this.shutdownSignals) {
       process.on(signal, async () => {
@@ -1629,20 +1822,20 @@ export class Application {
       });
     }
   }
-  
+
   private async shutdown(): Promise<void> {
-    this.logger.info('Shutting down...');
-    
+    this.logger.info("Shutting down...");
+
     // Stop accepting new messages
     await this.bot.stop();
-    
+
     // Close SSH connections
     await this.sshClient.disconnect();
-    
+
     // Flush logs
     // await this.logger.flush();
-    
-    this.logger.info('Shutdown complete');
+
+    this.logger.info("Shutdown complete");
   }
 }
 ```
@@ -1651,12 +1844,12 @@ export class Application {
 
 ## Document History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2024-01-15 | Architecture Team | Initial design |
-| 1.1 | 2024-01-20 | Architecture Team | Added security details |
-| 1.2 | 2024-01-25 | Architecture Team | Added migration path |
+| Version | Date       | Author            | Changes                |
+| ------- | ---------- | ----------------- | ---------------------- |
+| 1.0     | 2024-01-15 | Architecture Team | Initial design         |
+| 1.1     | 2024-01-20 | Architecture Team | Added security details |
+| 1.2     | 2024-01-25 | Architecture Team | Added migration path   |
 
 ---
 
-*This architecture document serves as the foundation for the TypeScript migration and implementation phases. All modules should be implemented following the interfaces and patterns defined herein.*
+_This architecture document serves as the foundation for the TypeScript migration and implementation phases. All modules should be implemented following the interfaces and patterns defined herein._

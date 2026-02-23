@@ -393,13 +393,17 @@ export class LoggingService {
     const rotatedPath = `${this.file}.${timestamp}`;
 
     try {
+      // Ensure any pending writes are complete by waiting a tick
+      // This allows any in-flight appendFile operations to complete
+      await new Promise((resolve) => setImmediate(resolve));
+
       // Rename current file
       await fs.rename(this.file, rotatedPath);
 
       // Clean up old files
       await this.cleanupOldLogFiles();
 
-      // Reset current log file
+      // Reset current log file with fresh state
       this.currentLogFile = {
         path: this.file,
         size: 0,

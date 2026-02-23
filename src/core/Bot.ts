@@ -23,7 +23,15 @@ interface BotConfig {
   token: string;
   ownerIds: string[];
   polling: boolean;
+  /** Optional custom API URL for Telegram Bot API proxies */
+  apiUrl?: string;
 }
+
+/**
+ * Pre-compiled command regex pattern
+ * Matches: /command[@bot_username] [args]
+ */
+const COMMAND_REGEX = /^\/(\w+)(?:@\w+)?(?:\s+(.*))?$/;
 
 /**
  * Telegram Bot implementation
@@ -37,7 +45,11 @@ export class Bot implements IBot {
   private started = false;
 
   constructor(config: BotConfig, logger: LoggingService) {
-    this.bot = new TelegramBot(config.token, { polling: config.polling });
+    const options: TelegramBot.ConstructorOptions = { polling: config.polling };
+    if (config.apiUrl) {
+      options.baseApiUrl = config.apiUrl;
+    }
+    this.bot = new TelegramBot(config.token, options);
     this.ownerIds = new Set(config.ownerIds);
     this.logger = logger;
   }
@@ -183,14 +195,14 @@ export class Bot implements IBot {
       return;
     }
 
-    // Parse command
-    const match = text.match(/^\/(\w+)(?:@\w+)?(?:\s+(.*))?$/);
+    // Parse command using pre-compiled regex
+    const match = text.match(COMMAND_REGEX);
     if (!match) {
       return;
     }
 
-    const commandName = match[1] ?? '';
-    const args = match[2] ?? '';
+    const commandName = match[1] ?? "";
+    const args = match[2] ?? "";
 
     // Find handler
     const handler = this.commands.get(commandName);

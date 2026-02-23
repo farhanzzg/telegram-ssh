@@ -26,29 +26,47 @@ A secure, production-ready Telegram bot for remote SSH server management.
 
 ### Prerequisites
 
-- Node.js 18+ (for development)
-- Linux (for production deployment)
+- Node.js 18+ (for npm/pnpm installation or development)
+- Linux (for production deployment with systemd)
 
 ### Installation
 
-#### From Binary (Recommended)
+#### Option 1: npm/pnpm Global (Recommended)
+
+```bash
+# Install globally with npm
+npm install -g telegram-ssh-bot
+
+# Or with pnpm
+pnpm add -g telegram-ssh-bot
+
+# The .env file is auto-generated at ~/.config/telegram-ssh-bot/.env
+# Edit with your credentials
+nano ~/.config/telegram-ssh-bot/.env
+
+# Start the bot
+telegram-ssh-bot
+```
+
+#### Option 2: Binary Installation
 
 ```bash
 # Download and install
 ./deploy/install.sh
 
-# Configure
+# The .env file is auto-generated at ~/.config/telegram-ssh-bot/.env
+# Edit with your credentials
 nano ~/.config/telegram-ssh-bot/.env
 
-# Start
+# Start with systemd
 ./deploy/manage.sh start
 ```
 
-#### From Source
+#### Option 3: From Source
 
 ```bash
 # Clone and build
-git clone https://github.com/user/telegram-ssh-bot.git
+git clone https://github.com/farhanzzg/telegram-ssh.git
 cd telegram-ssh-bot
 npm install
 npm run build:binary
@@ -59,39 +77,102 @@ npm run build:binary
 
 ## Configuration
 
-Create `~/.config/telegram-ssh-bot/.env`:
+The configuration file is automatically generated at `~/.config/telegram-ssh-bot/.env` during installation. The encryption key is also auto-generated for you.
 
 ```bash
 # Required
 BOT_TOKEN=your_telegram_bot_token
 BOT_CHAT_ID=your_chat_id
 BOT_OWNER_IDS=123456789,987654321
-ENCRYPTION_KEY=64_char_hex_key
+ENCRYPTION_KEY=auto_generated_64_char_hex_key
 
-# Optional
-LOG_LEVEL=info
+# SSH Configuration
+SSH_DEFAULT_PORT=22
+SSH_CONNECTION_TIMEOUT=30000
 SSH_COMMAND_TIMEOUT=30000
+SSH_DEFAULT_PRIVATE_KEY_PATH=
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Backup
+BACKUP_ENABLED=true
+BACKUP_INTERVAL_MS=3600000
+BACKUP_MAX_COUNT=10
+
+# Monitoring
+MONITORING_ENABLED=true
+MONITORING_INTERVAL_MS=300000
+
+# Logging (Optional)
+LOG_LEVEL=info
 ```
 
 ### Configuration Options
 
-| Variable              | Required | Description                                                       |
-| --------------------- | -------- | ----------------------------------------------------------------- |
-| `BOT_TOKEN`           | Yes      | Telegram bot token from [@BotFather](https://t.me/botfather)      |
-| `BOT_CHAT_ID`         | Yes      | Primary chat ID for notifications                                 |
-| `BOT_OWNER_IDS`       | Yes      | Comma-separated list of authorized user IDs                       |
-| `ENCRYPTION_KEY`      | Yes      | 64-character hex key for credential encryption                    |
-| `LOG_LEVEL`           | No       | Logging level: `error`, `warn`, `info`, `debug` (default: `info`) |
-| `SSH_COMMAND_TIMEOUT` | No       | Command timeout in ms (default: `30000`)                          |
-| `BACKUP_INTERVAL`     | No       | Backup interval in ms (default: `3600000`)                        |
-| `MAX_CONNECTIONS`     | No       | Max SSH connections in pool (default: `10`)                       |
+#### Required Variables
 
-### Generating Encryption Key
+| Variable         | Description                                                     |
+| ---------------- | --------------------------------------------------------------- |
+| `BOT_TOKEN`      | Telegram bot token from [@BotFather](https://t.me/botfather)    |
+| `BOT_CHAT_ID`    | Primary chat ID for notifications                               |
+| `BOT_OWNER_IDS`  | Comma-separated list of authorized user IDs                     |
+| `ENCRYPTION_KEY` | 64-character hex key for credential encryption (auto-generated) |
+
+#### SSH Configuration
+
+| Variable                       | Default         | Description                      |
+| ------------------------------ | --------------- | -------------------------------- |
+| `SSH_DEFAULT_PORT`             | `22`            | Default SSH port for new servers |
+| `SSH_CONNECTION_TIMEOUT`       | `30000`         | Connection timeout in ms         |
+| `SSH_COMMAND_TIMEOUT`          | `30000`         | Command execution timeout in ms  |
+| `SSH_DEFAULT_PRIVATE_KEY_PATH` | `~/.ssh/id_rsa` | Default private key path         |
+
+#### Rate Limiting
+
+| Variable                  | Default | Description                        |
+| ------------------------- | ------- | ---------------------------------- |
+| `RATE_LIMIT_WINDOW_MS`    | `60000` | Rate limit window in ms (1 minute) |
+| `RATE_LIMIT_MAX_REQUESTS` | `100`   | Max requests per window            |
+
+#### Backup Configuration
+
+| Variable             | Default   | Description                    |
+| -------------------- | --------- | ------------------------------ |
+| `BACKUP_ENABLED`     | `true`    | Enable automatic backups       |
+| `BACKUP_INTERVAL_MS` | `3600000` | Backup interval in ms (1 hour) |
+| `BACKUP_MAX_COUNT`   | `10`      | Maximum backup files to keep   |
+
+#### Monitoring Configuration
+
+| Variable                 | Default  | Description                         |
+| ------------------------ | -------- | ----------------------------------- |
+| `MONITORING_ENABLED`     | `true`   | Enable health monitoring            |
+| `MONITORING_INTERVAL_MS` | `300000` | Health check interval in ms (5 min) |
+
+#### Optional Variables
+
+| Variable      | Default | Description                                           |
+| ------------- | ------- | ----------------------------------------------------- |
+| `LOG_LEVEL`   | `info`  | Logging level: `error`, `warn`, `info`, `debug`       |
+| `BOT_API_URL` | -       | Custom Telegram Bot API URL (for proxies/middlewares) |
+
+### Auto-Generated Configuration
+
+During installation, the following are automatically generated:
+
+- **Configuration file**: `~/.config/telegram-ssh-bot/.env`
+- **Encryption key**: Secure 64-character hex key (32 bytes)
+
+If you need to regenerate the encryption key:
 
 ```bash
 # Generate a secure 64-character hex key
 openssl rand -hex 32
 ```
+
+> **Note**: Changing the encryption key will make previously encrypted credentials unreadable. You'll need to re-add your servers after changing the key.
 
 ## Usage
 

@@ -1,32 +1,59 @@
 {
   "name": "telegram-ssh-bot",
-  "version": "2.0.0",
+  "version": "2.1.0",
+  "description": "A Telegram bot for secure SSH server management and remote command execution",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "author": "farhanzzg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farhanzzg/telegram-ssh.git"
+  },
+  "bugs": {
+    "url": "https://github.com/farhanzzg/telegram-ssh/issues"
+  },
+  "homepage": "https://github.com/farhanzzg/telegram-ssh#readme",
   "bin": {
     "telegram-ssh-bot": "./dist/index.js"
   },
   "files": [
     "dist/**/*",
-    "README.md",
-    "LICENSE"
+    "scripts/**/*",
+    "deploy/.env.example",
+    "README.md"
   ],
   "engines": {
     "node": ">=18.0.0"
   },
   "keywords": [
     "telegram",
+    "telegram-bot",
     "ssh",
+    "ssh-client",
     "bot",
     "remote",
-    "server-management"
+    "server-management",
+    "server-administration",
+    "devops",
+    "remote-access",
+    "command-execution",
+    "terminal"
   ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "postinstall": "node -e \"console.log('Telegram SSH Bot installed. Run: telegram-ssh-bot')\"",
+    "prepublishOnly": "npm run clean && npm run build",
+    "postinstall": "node scripts/postinstall.js",
     "build:binary": "npm run build && pkg .",
     "build:binary:linux": "npm run build && pkg . --targets node18-linux-x64",
     "build:binary:macos": "npm run build && pkg . --targets node18-macos-x64",
